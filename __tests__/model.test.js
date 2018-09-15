@@ -20,6 +20,42 @@ beforeEach(() => {
   jest.resetAllMocks();
 });
 
+describe('instance methods', () => {
+  let item;
+  beforeEach(() => {
+    item = new TestClass({ id: 123, date: 111, foobar: 'foo' });
+  });
+  describe('save', () => {
+    it('makes correct put request to the document client with the instance', () => {
+      item.save();
+      expect(DocumentClient.put).toHaveBeenCalledWith({
+        TableName: TestClass.tableName,
+        Item: item,
+      });
+    });
+
+    it('resolves with the instance', (done) => {
+      expect.assertions(1);
+      DocumentClient.put.mockResolvedValue(null);
+      item.save().then((data) => {
+        expect(data).toBe(item);
+        done();
+      });
+    });
+
+    it('rejects with the document client error', (done) => {
+      expect.assertions(1);
+      const error = jest.fn();
+      DocumentClient.put.mockRejectedValue(error);
+      item.save().catch((e) => {
+        expect(e).toBe(error);
+        done();
+      });
+    });
+  });
+});
+
+
 describe('query', () => {
   describe('query structure', () => {
     beforeEach(() => {
@@ -85,6 +121,16 @@ describe('query', () => {
         expect(item).toBeInstanceOf(TestClass);
         expect(item).toEqual(items[i]);
       });
+      done();
+    });
+  });
+
+  it('rejects with the document client error', (done) => {
+    expect.assertions(1);
+    const error = jest.fn();
+    DocumentClient.query.mockRejectedValue(error);
+    TestClass.query(jest.fn()).catch((e) => {
+      expect(e).toBe(error);
       done();
     });
   });

@@ -1,6 +1,6 @@
 # jedlik
 
-Jedlik is an extensible DynamoDB ODM for Node
+Jedlik is an extensible DynamoDB ODM for Node.
 
 Jedlik allows you to create plain JavaScript classes to represent entities in your domain.
 Extending these classes from Jedlik's `Model` class enhances the class by introducing behaviour to allow it to interact with DynamoDB in a simple way.
@@ -15,9 +15,39 @@ NPM:
 Unstable releases are published as `develop` - e.g. `yarn add @peak-ai/jedlik@develop`
 
 ## Usage
+```js
+const { Model } = require('@peak-ai/jedlik');
 
+class User extends Model {
+  static get tableName() {
+    // the name of the DynamoDB table the model should write to
+    // it is assumed this table exists
+    return 'users';
+  }
+
+  constructor(id, name) {
+    this.id = id;
+    this.name = name;
+  }
+}
+
+const user = new User(1, 'Fred');
+
+user.save()
+  .then(() => User.query({ id: 1 })) // query on the table's key schema
+  .then((data) => {
+    console.log(data)
+    /*
+    [User {
+      id: 1,
+      name: 'Fred'
+    }]
+    */
+  });
+```
 ## API
 #### static `query(key, [index = null])`
+#### `save(key, [index = null])`
 
 ## Development
 ### Getting Started

@@ -32,6 +32,14 @@ class Model {
 
     return data.Items.map(item => new this(item));
   }
+
+  async save() {
+    await DocumentClient.put({
+      TableName: this.constructor.tableName,
+      Item: this,
+    });
+    return this;
+  }
 }
 
 module.exports = Model;
