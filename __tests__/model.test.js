@@ -174,3 +174,33 @@ describe('get', () => {
     });
   });
 });
+
+describe('delete', () => {
+  it('resolves with null if the delete request is successful', (done) => {
+    DocumentClient.delete.mockResolvedValue(jest.fn());
+    expect.assertions(1);
+    TestClass.delete(jest.fn()).then((result) => {
+      expect(result).toBeNull();
+      done();
+    });
+  });
+
+  it('rejects with the error if the delete errors', (done) => {
+    const error = jest.fn();
+    DocumentClient.delete.mockRejectedValue(error);
+    expect.assertions(1);
+    TestClass.delete(jest.fn()).catch((e) => {
+      expect(e).toBe(error);
+      done();
+    });
+  });
+
+  it('invokes the delete operation with the correct parameters', () => {
+    DocumentClient.delete.mockResolvedValue(jest.fn());
+    TestClass.delete({ id: 123 });
+    expect(DocumentClient.delete).toHaveBeenCalledWith({
+      TableName: TestClass.tableName,
+      Key: { id: 123 },
+    });
+  });
+});

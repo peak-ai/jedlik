@@ -46,6 +46,15 @@ class Model {
     return new this(data.Item);
   }
 
+  static async delete(key) {
+    await DocumentClient.delete({
+      TableName: this.tableName,
+      Key: key,
+    });
+
+    return null;
+  }
+
   async save() {
     await DocumentClient.put({
       TableName: this.constructor.tableName,

@@ -47,8 +47,21 @@ user.save()
 ```
 ## API
 #### static `query(key, [index = null])`
+Resolves with an array of items which match the given key parameters. Take an optional index parameter to query against a secondary index.
+Returned items are instances of the model.
+
 #### static `get(key)`
+Resolves with the items that matches the given key parameter.
+The returned item is an instance of the model.
+Returns `null` if the item is not found.
+
+#### static `delete(key)`
+Deletes the item that matches the given key parameter.
+Resolves as `null`.
+
 #### `save(key, [index = null])`
+Saves the instance of the model to DynamoDB, either overwriting the existing item with the given primary key, or creating a new one.
+Resolves with the instance.
 
 ## Development
 ### Getting Started
