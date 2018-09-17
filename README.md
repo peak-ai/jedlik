@@ -34,19 +34,20 @@ class User extends Model {
 const user = new User(1, 'Fred');
 
 user.save()
-  .then(() => User.query({ id: 1 })) // query on the table's key schema
+  .then(() => User.get({ id: 1 })) // query on the table's key schema
   .then((data) => {
     console.log(data)
     /*
-    [User {
+    User {
       id: 1,
       name: 'Fred'
-    }]
+    }
     */
   });
 ```
 ## API
 #### static `query(key, [index = null])`
+#### static `get(key)`
 #### `save(key, [index = null])`
 
 ## Development

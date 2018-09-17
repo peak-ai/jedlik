@@ -33,6 +33,19 @@ class Model {
     return data.Items.map(item => new this(item));
   }
 
+  static async get(key) {
+    const data = await DocumentClient.get({
+      TableName: this.tableName,
+      Key: key, // how does this work with indexes?
+    });
+
+    if (!data.Item) {
+      return null;
+    }
+
+    return new this(data.Item);
+  }
+
   async save() {
     await DocumentClient.put({
       TableName: this.constructor.tableName,

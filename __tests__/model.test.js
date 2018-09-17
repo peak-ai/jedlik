@@ -55,8 +55,33 @@ describe('instance methods', () => {
   });
 });
 
-
 describe('query', () => {
+  it('resolves with instances of the model from the returned data', (done) => {
+    const Items = [
+      { id: 123, date: 111, foobar: 'foo' },
+      { id: 456, date: 222, foobar: 'bar' },
+    ];
+    DocumentClient.query.mockResolvedValue({ Items });
+    expect.assertions(Items.length * 2);
+    TestClass.query(jest.fn()).then((items) => {
+      items.forEach((item, i) => {
+        expect(item).toBeInstanceOf(TestClass);
+        expect(item).toEqual(items[i]);
+      });
+      done();
+    });
+  });
+
+  it('rejects with the document client error', (done) => {
+    expect.assertions(1);
+    const error = jest.fn();
+    DocumentClient.query.mockRejectedValue(error);
+    TestClass.query(jest.fn()).catch((e) => {
+      expect(e).toBe(error);
+      done();
+    });
+  });
+
   describe('query structure', () => {
     beforeEach(() => {
       DocumentClient.query.mockResolvedValue({ Items: [] });
@@ -107,20 +132,25 @@ describe('query', () => {
       });
     });
   });
+});
 
+describe('get', () => {
   it('resolves with instances of the model from the returned data', (done) => {
-    const Items = [
-      { id: 123, date: 111, foobar: 'foo' },
-      { id: 456, date: 222, foobar: 'bar' },
-    ];
-    DocumentClient.query.mockResolvedValue({ Items });
+    const Item = { id: 123, date: 111, foobar: 'foo' };
+    DocumentClient.get.mockResolvedValue({ Item });
+    expect.assertions(2);
+    TestClass.get(jest.fn()).then((item) => {
+      expect(item).toBeInstanceOf(TestClass);
+      expect(item).toEqual(Item);
+      done();
+    });
+  });
 
-    expect.assertions(Items.length * 2);
-    TestClass.query(jest.fn()).then((items) => {
-      items.forEach((item, i) => {
-        expect(item).toBeInstanceOf(TestClass);
-        expect(item).toEqual(items[i]);
-      });
+  it('resolves with null if the item is not found', (done) => {
+    DocumentClient.get.mockResolvedValue({});
+    expect.assertions(1);
+    TestClass.get(jest.fn()).then((item) => {
+      expect(item).toBeNull();
       done();
     });
   });
@@ -128,10 +158,19 @@ describe('query', () => {
   it('rejects with the document client error', (done) => {
     expect.assertions(1);
     const error = jest.fn();
-    DocumentClient.query.mockRejectedValue(error);
-    TestClass.query(jest.fn()).catch((e) => {
+    DocumentClient.get.mockRejectedValue(error);
+    TestClass.get(jest.fn()).catch((e) => {
       expect(e).toBe(error);
       done();
+    });
+  });
+
+  it('executes the correct query', () => {
+    DocumentClient.get.mockResolvedValue(jest.fn());
+    TestClass.get({ id: 123 });
+    expect(DocumentClient.get).toHaveBeenCalledWith({
+      TableName: TestClass.tableName,
+      Key: { id: 123 },
     });
   });
 });

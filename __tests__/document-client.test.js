@@ -26,7 +26,10 @@ describe('batchGet', () => {
   it('calls the AWS DocumentClient batchGet', () => {
     expect.assertions(1);
     DocumentClient.batchGet(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.batchGet).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.batchGet).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if batchGet operation is successful', () => {
@@ -46,7 +49,10 @@ describe('batchWrite', () => {
   it('calls the AWS DocumentClient batchWrite', () => {
     expect.assertions(1);
     DocumentClient.batchWrite(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.batchWrite).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.batchWrite).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if batchWrite operation is successful', () => {
@@ -66,7 +72,10 @@ describe('delete', () => {
   it('calls the AWS DocumentClient delete', () => {
     expect.assertions(1);
     DocumentClient.delete(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.delete).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.delete).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if delete operation is successful', () => {
@@ -86,7 +95,10 @@ describe('get', () => {
   it('calls the AWS DocumentClient get', () => {
     expect.assertions(1);
     DocumentClient.get(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.get).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.get).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if get operation is successful', () => {
@@ -106,7 +118,10 @@ describe('put', () => {
   it('calls the AWS DocumentClient put', () => {
     expect.assertions(1);
     DocumentClient.put(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.put).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.put).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if put operation is successful', () => {
@@ -126,7 +141,10 @@ describe('query', () => {
   it('calls the AWS DocumentClient query', () => {
     expect.assertions(1);
     DocumentClient.query(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.query).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.query).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if query operation is successful', () => {
@@ -146,7 +164,10 @@ describe('scan', () => {
   it('calls the AWS DocumentClient scan', () => {
     expect.assertions(1);
     DocumentClient.scan(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.scan).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.scan).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if scan operation is successful', () => {
@@ -166,7 +187,10 @@ describe('update', () => {
   it('calls the AWS DocumentClient update', () => {
     expect.assertions(1);
     DocumentClient.update(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.update).toHaveBeenCalledWith(params, expect.any(Function));
+    expect(AWS.DynamoDB.DocumentClient.prototype.update).toHaveBeenCalledWith(
+      params,
+      expect.any(Function),
+    );
   });
 
   it('resolves with the data if update operation is successful', () => {
