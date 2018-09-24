@@ -33,10 +33,20 @@ class Model {
     return data.Items.map(item => new this(item));
   }
 
+  static async first(key, index = null) {
+    const items = await this.query(key, index);
+
+    if (items.length === 0) {
+      return null;
+    }
+
+    return items[0];
+  }
+
   static async get(key) {
     const data = await DocumentClient.get({
       TableName: this.tableName,
-      Key: key, // how does this work with indexes?
+      Key: key,
     });
 
     if (!data.Item) {

@@ -134,6 +134,83 @@ describe('query', () => {
   });
 });
 
+describe('query', () => {
+  it('resolves with an instance of the model from the first returned item', (done) => {
+    const Items = [
+      { id: 123, date: 111, foobar: 'foo' },
+      { id: 456, date: 222, foobar: 'bar' },
+    ];
+    DocumentClient.query.mockResolvedValue({ Items });
+    expect.assertions(2);
+    TestClass.first(jest.fn()).then((item) => {
+      expect(item).toBeInstanceOf(TestClass);
+      expect(item).toEqual(Items[0]);
+      done();
+    });
+  });
+
+  it('rejects with the document client error', (done) => {
+    expect.assertions(1);
+    const error = jest.fn();
+    DocumentClient.query.mockRejectedValue(error);
+    TestClass.first(jest.fn()).catch((e) => {
+      expect(e).toBe(error);
+      done();
+    });
+  });
+
+  describe('query structure', () => {
+    beforeEach(() => {
+      DocumentClient.query.mockResolvedValue({ Items: [] });
+    });
+
+    it('executes the correct basic query', () => {
+      TestClass.first({ id: 123 });
+      expect(DocumentClient.query).toHaveBeenCalledWith({
+        TableName: TestClass.tableName,
+        KeyConditionExpression: '#id = :id',
+        ExpressionAttributeNames: {
+          '#id': 'id',
+        },
+        ExpressionAttributeValues: {
+          ':id': 123,
+        },
+      });
+    });
+
+    it('executes the correct query for composite keys', () => {
+      TestClass.first({ id: 123, date: 111 });
+      expect(DocumentClient.query).toHaveBeenCalledWith({
+        TableName: TestClass.tableName,
+        KeyConditionExpression: '#id = :id AND #date = :date',
+        ExpressionAttributeNames: {
+          '#id': 'id',
+          '#date': 'date',
+        },
+        ExpressionAttributeValues: {
+          ':id': 123,
+          ':date': 111,
+        },
+      });
+    });
+
+    it('queries the given index', () => {
+      TestClass.first({ test: 'foobar' }, 'test-index');
+      expect(DocumentClient.query).toHaveBeenCalledWith({
+        TableName: TestClass.tableName,
+        IndexName: 'test-index',
+        KeyConditionExpression: '#test = :test',
+        ExpressionAttributeNames: {
+          '#test': 'test',
+        },
+        ExpressionAttributeValues: {
+          ':test': 'foobar',
+        },
+      });
+    });
+  });
+});
+
 describe('get', () => {
   it('resolves with instances of the model from the returned data', (done) => {
     const Item = { id: 123, date: 111, foobar: 'foo' };
