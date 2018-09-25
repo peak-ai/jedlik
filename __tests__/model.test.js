@@ -1,7 +1,9 @@
 const Model = require('../src/model');
 const DocumentClient = require('../src/document-client');
+const QueryHelpers = require('../src/query-helpers');
 
 jest.mock('../src/document-client');
+jest.mock('../src/query-helpers');
 
 class TestClass extends Model {
   static get tableName() {
@@ -16,8 +18,20 @@ class TestClass extends Model {
   }
 }
 
+let mockExpressionAttributeNames;
+let mockExpressionAttributeValues;
+let mockKeyConditionExpression;
+
 beforeEach(() => {
   jest.resetAllMocks();
+
+  mockExpressionAttributeNames = jest.fn();
+  mockExpressionAttributeValues = jest.fn();
+  mockKeyConditionExpression = jest.fn();
+
+  QueryHelpers.getExpressionAttributeNames.mockReturnValue(mockExpressionAttributeNames);
+  QueryHelpers.getExpressionAttributeValues.mockReturnValue(mockExpressionAttributeValues);
+  QueryHelpers.getKeyConditionExpression.mockReturnValue(mockKeyConditionExpression);
 });
 
 describe('instance methods', () => {
@@ -87,33 +101,13 @@ describe('query', () => {
       DocumentClient.query.mockResolvedValue({ Items: [] });
     });
 
-    it('executes the correct basic query', () => {
+    it('executes the correct query', () => {
       TestClass.query({ id: 123 });
       expect(DocumentClient.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
-        KeyConditionExpression: '#id = :id',
-        ExpressionAttributeNames: {
-          '#id': 'id',
-        },
-        ExpressionAttributeValues: {
-          ':id': 123,
-        },
-      });
-    });
-
-    it('executes the correct query for composite keys', () => {
-      TestClass.query({ id: 123, date: 111 });
-      expect(DocumentClient.query).toHaveBeenCalledWith({
-        TableName: TestClass.tableName,
-        KeyConditionExpression: '#id = :id AND #date = :date',
-        ExpressionAttributeNames: {
-          '#id': 'id',
-          '#date': 'date',
-        },
-        ExpressionAttributeValues: {
-          ':id': 123,
-          ':date': 111,
-        },
+        KeyConditionExpression: mockKeyConditionExpression,
+        ExpressionAttributeNames: mockExpressionAttributeNames,
+        ExpressionAttributeValues: mockExpressionAttributeValues,
       });
     });
 
@@ -122,19 +116,15 @@ describe('query', () => {
       expect(DocumentClient.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
         IndexName: 'test-index',
-        KeyConditionExpression: '#test = :test',
-        ExpressionAttributeNames: {
-          '#test': 'test',
-        },
-        ExpressionAttributeValues: {
-          ':test': 'foobar',
-        },
+        KeyConditionExpression: mockKeyConditionExpression,
+        ExpressionAttributeNames: mockExpressionAttributeNames,
+        ExpressionAttributeValues: mockExpressionAttributeValues,
       });
     });
   });
 });
 
-describe('query', () => {
+describe('first', () => {
   it('resolves with an instance of the model from the first returned item', (done) => {
     const Items = [
       { id: 123, date: 111, foobar: 'foo' },
@@ -168,29 +158,9 @@ describe('query', () => {
       TestClass.first({ id: 123 });
       expect(DocumentClient.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
-        KeyConditionExpression: '#id = :id',
-        ExpressionAttributeNames: {
-          '#id': 'id',
-        },
-        ExpressionAttributeValues: {
-          ':id': 123,
-        },
-      });
-    });
-
-    it('executes the correct query for composite keys', () => {
-      TestClass.first({ id: 123, date: 111 });
-      expect(DocumentClient.query).toHaveBeenCalledWith({
-        TableName: TestClass.tableName,
-        KeyConditionExpression: '#id = :id AND #date = :date',
-        ExpressionAttributeNames: {
-          '#id': 'id',
-          '#date': 'date',
-        },
-        ExpressionAttributeValues: {
-          ':id': 123,
-          ':date': 111,
-        },
+        KeyConditionExpression: mockKeyConditionExpression,
+        ExpressionAttributeNames: mockExpressionAttributeNames,
+        ExpressionAttributeValues: mockExpressionAttributeValues,
       });
     });
 
@@ -199,13 +169,9 @@ describe('query', () => {
       expect(DocumentClient.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
         IndexName: 'test-index',
-        KeyConditionExpression: '#test = :test',
-        ExpressionAttributeNames: {
-          '#test': 'test',
-        },
-        ExpressionAttributeValues: {
-          ':test': 'foobar',
-        },
+        KeyConditionExpression: mockKeyConditionExpression,
+        ExpressionAttributeNames: mockExpressionAttributeNames,
+        ExpressionAttributeValues: mockExpressionAttributeValues,
       });
     });
   });
