@@ -58,8 +58,7 @@ Resolves with the item that matches the given key parameter.
 The returned item is an instance of the model.
 Returns `null` if the item is not found.
 
-**N.B.** The key must be the full primary key defined in the table schema.
-- If the table has a composite key, both the partition key and sort key must be provided. You cannot search on a secondary index. If you need to do one of these, use `Model.query` or `Model.first` instead.
+**N.B.** The key must be the full primary key defined in the table schema. If the table has a composite key, both the partition key and sort key must be provided. You cannot search on a secondary index. If you need to do one of these, use `Model.query` or `Model.first` instead.
 
 #### static `delete(key)`
 Deletes the item that matches the given key parameter.
