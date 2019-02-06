@@ -6,6 +6,12 @@ const {
 } = require('./query-helpers');
 
 class Model {
+  constructor() {
+    this.db = new DocumentClient({
+      params: { TableName: this.constructor.tableName },
+    });
+  }
+
   static async query(key, index = null) {
     const params = {
       TableName: this.tableName,
@@ -18,9 +24,9 @@ class Model {
       params.IndexName = index;
     }
 
-    const data = await DocumentClient.query(params);
+    const { Items } = await new DocumentClient().query(params);
 
-    return data.Items.map(item => new this(item));
+    return Items.map(item => new this(item));
   }
 
   static async first(key, index = null) {
@@ -34,20 +40,20 @@ class Model {
   }
 
   static async get(key) {
-    const data = await DocumentClient.get({
+    const { Item } = await new DocumentClient().get({
       TableName: this.tableName,
       Key: key,
     });
 
-    if (!data.Item) {
+    if (!Item) {
       return null;
     }
 
-    return new this(data.Item);
+    return new this(Item);
   }
 
   static async delete(key) {
-    await DocumentClient.delete({
+    await new DocumentClient().delete({
       TableName: this.tableName,
       Key: key,
     });
@@ -56,10 +62,7 @@ class Model {
   }
 
   async save() {
-    await DocumentClient.put({
-      TableName: this.constructor.tableName,
-      Item: this,
-    });
+    await this.db.put({ Item: this });
     return this;
   }
 }

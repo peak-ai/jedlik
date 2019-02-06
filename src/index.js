@@ -1,3 +1,4 @@
 require('@babel/polyfill');
 
-module.exports.Model = require('./model');
+exports.DocumentClient = require('./document-client');
+exports.Model = require('./model');

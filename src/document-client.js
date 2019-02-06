@@ -1,61 +1,49 @@
 const AWS = require('aws-sdk');
 
-const callback = (resolve, reject) => (error, data) => {
-  if (error) {
-    reject(error);
-  } else {
-    resolve(data);
-  }
-};
-
 class DocumentClient extends AWS.DynamoDB.DocumentClient {
   batchGet(params) {
-    return new Promise((resolve, reject) => {
-      super.batchGet(params, callback(resolve, reject));
-    });
+    return super.batchGet(params).promise();
   }
 
   batchWrite(params) {
-    return new Promise((resolve, reject) => {
-      super.batchWrite(params, callback(resolve, reject));
-    });
+    return super.batchWrite(params).promise();
+  }
+
+  createSet(params) {
+    return super.createSet(params).promise();
   }
 
   delete(params) {
-    return new Promise((resolve, reject) => {
-      super.delete(params, callback(resolve, reject));
-    });
+    return super.delete(params).promise();
   }
 
   get(params) {
-    return new Promise((resolve, reject) => {
-      super.get(params, callback(resolve, reject));
-    });
+    return super.get(params).promise();
   }
 
   put(params) {
-    return new Promise((resolve, reject) => {
-      super.put(params, callback(resolve, reject));
-    });
+    return super.put(params).promise();
   }
 
   query(params) {
-    return new Promise((resolve, reject) => {
-      super.query(params, callback(resolve, reject));
-    });
+    return super.query(params).promise();
   }
 
   scan(params) {
-    return new Promise((resolve, reject) => {
-      super.scan(params, callback(resolve, reject));
-    });
+    return super.scan(params).promise();
+  }
+
+  transactGet(params) {
+    return super.transactGet(params).promise();
+  }
+
+  transactWrite(params) {
+    return super.transactWrite(params).promise();
   }
 
   update(params) {
-    return new Promise((resolve, reject) => {
-      super.update(params, callback(resolve, reject));
-    });
+    return super.update(params).promise();
   }
 }
 
-module.exports = new DocumentClient();
+module.exports = DocumentClient;

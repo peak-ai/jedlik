@@ -34,23 +34,35 @@ beforeEach(() => {
   QueryHelpers.getKeyConditionExpression.mockReturnValue(mockKeyConditionExpression);
 });
 
+describe('constructor', () => {
+  it('has a db property which is an instance of DocumentClient bound to the model\'s table', () => {
+    const db = jest.fn();
+    DocumentClient.mockImplementationOnce(() => db);
+    const item = new TestClass({ id: 123, date: 111, foobar: 'foo' });
+    expect(DocumentClient).toHaveBeenCalledWith({
+      params: { TableName: TestClass.tableName },
+    });
+    expect(item.db).toBe(db);
+  });
+});
+
 describe('instance methods', () => {
   let item;
   beforeEach(() => {
     item = new TestClass({ id: 123, date: 111, foobar: 'foo' });
   });
+
   describe('save', () => {
     it('makes correct put request to the document client with the instance', () => {
       item.save();
-      expect(DocumentClient.put).toHaveBeenCalledWith({
-        TableName: TestClass.tableName,
+      expect(item.db.put).toHaveBeenCalledWith({
         Item: item,
       });
     });
 
     it('resolves with the instance', (done) => {
       expect.assertions(1);
-      DocumentClient.put.mockResolvedValue(null);
+      item.db.put.mockResolvedValue(null);
       item.save().then((data) => {
         expect(data).toBe(item);
         done();
@@ -60,7 +72,7 @@ describe('instance methods', () => {
     it('rejects with the document client error', (done) => {
       expect.assertions(1);
       const error = jest.fn();
-      DocumentClient.put.mockRejectedValue(error);
+      item.db.put.mockRejectedValue(error);
       item.save().catch((e) => {
         expect(e).toBe(error);
         done();
@@ -75,7 +87,7 @@ describe('query', () => {
       { id: 123, date: 111, foobar: 'foo' },
       { id: 456, date: 222, foobar: 'bar' },
     ];
-    DocumentClient.query.mockResolvedValue({ Items });
+    DocumentClient.prototype.query.mockResolvedValue({ Items });
     expect.assertions(Items.length * 2);
     TestClass.query(jest.fn()).then((items) => {
       items.forEach((item, i) => {
@@ -89,7 +101,7 @@ describe('query', () => {
   it('rejects with the document client error', (done) => {
     expect.assertions(1);
     const error = jest.fn();
-    DocumentClient.query.mockRejectedValue(error);
+    DocumentClient.prototype.query.mockRejectedValue(error);
     TestClass.query(jest.fn()).catch((e) => {
       expect(e).toBe(error);
       done();
@@ -98,12 +110,12 @@ describe('query', () => {
 
   describe('query structure', () => {
     beforeEach(() => {
-      DocumentClient.query.mockResolvedValue({ Items: [] });
+      DocumentClient.prototype.query.mockResolvedValue({ Items: [] });
     });
 
     it('executes the correct query', () => {
       TestClass.query({ id: 123 });
-      expect(DocumentClient.query).toHaveBeenCalledWith({
+      expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
         KeyConditionExpression: mockKeyConditionExpression,
         ExpressionAttributeNames: mockExpressionAttributeNames,
@@ -113,7 +125,7 @@ describe('query', () => {
 
     it('queries the given index', () => {
       TestClass.query({ test: 'foobar' }, 'test-index');
-      expect(DocumentClient.query).toHaveBeenCalledWith({
+      expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
         IndexName: 'test-index',
         KeyConditionExpression: mockKeyConditionExpression,
@@ -130,11 +142,11 @@ describe('first', () => {
       { id: 123, date: 111, foobar: 'foo' },
       { id: 456, date: 222, foobar: 'bar' },
     ];
-    DocumentClient.query.mockResolvedValue({ Items });
+    DocumentClient.prototype.query.mockResolvedValue({ Items });
     expect.assertions(2);
     TestClass.first(jest.fn()).then((item) => {
       expect(item).toBeInstanceOf(TestClass);
-      expect(item).toEqual(Items[0]);
+      expect(item).toEqual(expect.objectContaining(Items[0]));
       done();
     });
   });
@@ -142,7 +154,7 @@ describe('first', () => {
   it('rejects with the document client error', (done) => {
     expect.assertions(1);
     const error = jest.fn();
-    DocumentClient.query.mockRejectedValue(error);
+    DocumentClient.prototype.query.mockRejectedValue(error);
     TestClass.first(jest.fn()).catch((e) => {
       expect(e).toBe(error);
       done();
@@ -151,12 +163,12 @@ describe('first', () => {
 
   describe('query structure', () => {
     beforeEach(() => {
-      DocumentClient.query.mockResolvedValue({ Items: [] });
+      DocumentClient.prototype.query.mockResolvedValue({ Items: [] });
     });
 
     it('executes the correct basic query', () => {
       TestClass.first({ id: 123 });
-      expect(DocumentClient.query).toHaveBeenCalledWith({
+      expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
         KeyConditionExpression: mockKeyConditionExpression,
         ExpressionAttributeNames: mockExpressionAttributeNames,
@@ -166,7 +178,7 @@ describe('first', () => {
 
     it('queries the given index', () => {
       TestClass.first({ test: 'foobar' }, 'test-index');
-      expect(DocumentClient.query).toHaveBeenCalledWith({
+      expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
         TableName: TestClass.tableName,
         IndexName: 'test-index',
         KeyConditionExpression: mockKeyConditionExpression,
@@ -180,17 +192,17 @@ describe('first', () => {
 describe('get', () => {
   it('resolves with instances of the model from the returned data', (done) => {
     const Item = { id: 123, date: 111, foobar: 'foo' };
-    DocumentClient.get.mockResolvedValue({ Item });
+    DocumentClient.prototype.get.mockResolvedValue({ Item });
     expect.assertions(2);
     TestClass.get(jest.fn()).then((item) => {
       expect(item).toBeInstanceOf(TestClass);
-      expect(item).toEqual(Item);
+      expect(item).toEqual(expect.objectContaining(Item));
       done();
     });
   });
 
   it('resolves with null if the item is not found', (done) => {
-    DocumentClient.get.mockResolvedValue({});
+    DocumentClient.prototype.get.mockResolvedValue({});
     expect.assertions(1);
     TestClass.get(jest.fn()).then((item) => {
       expect(item).toBeNull();
@@ -201,7 +213,7 @@ describe('get', () => {
   it('rejects with the document client error', (done) => {
     expect.assertions(1);
     const error = jest.fn();
-    DocumentClient.get.mockRejectedValue(error);
+    DocumentClient.prototype.get.mockRejectedValue(error);
     TestClass.get(jest.fn()).catch((e) => {
       expect(e).toBe(error);
       done();
@@ -209,9 +221,9 @@ describe('get', () => {
   });
 
   it('executes the correct query', () => {
-    DocumentClient.get.mockResolvedValue(jest.fn());
+    DocumentClient.prototype.get.mockResolvedValue(jest.fn());
     TestClass.get({ id: 123 });
-    expect(DocumentClient.get).toHaveBeenCalledWith({
+    expect(DocumentClient.prototype.get).toHaveBeenCalledWith({
       TableName: TestClass.tableName,
       Key: { id: 123 },
     });
@@ -220,7 +232,7 @@ describe('get', () => {
 
 describe('delete', () => {
   it('resolves with null if the delete request is successful', (done) => {
-    DocumentClient.delete.mockResolvedValue(jest.fn());
+    DocumentClient.prototype.delete.mockResolvedValue(jest.fn());
     expect.assertions(1);
     TestClass.delete(jest.fn()).then((result) => {
       expect(result).toBeNull();
@@ -230,7 +242,7 @@ describe('delete', () => {
 
   it('rejects with the error if the delete errors', (done) => {
     const error = jest.fn();
-    DocumentClient.delete.mockRejectedValue(error);
+    DocumentClient.prototype.delete.mockRejectedValue(error);
     expect.assertions(1);
     TestClass.delete(jest.fn()).catch((e) => {
       expect(e).toBe(error);
@@ -239,9 +251,9 @@ describe('delete', () => {
   });
 
   it('invokes the delete operation with the correct parameters', () => {
-    DocumentClient.delete.mockResolvedValue(jest.fn());
+    DocumentClient.prototype.delete.mockResolvedValue(jest.fn());
     TestClass.delete({ id: 123 });
-    expect(DocumentClient.delete).toHaveBeenCalledWith({
+    expect(DocumentClient.prototype.delete).toHaveBeenCalledWith({
       TableName: TestClass.tableName,
       Key: { id: 123 },
     });
