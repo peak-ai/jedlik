@@ -1,19 +1,19 @@
-import moment from 'moment';
-import DocumentClient from './document-client';
-import { JedlikError } from './errors';
-import applySchema from './apply-schema';
-import {
+const moment = require('moment');
+const DocumentClient = require('./document-client');
+const { JedlikError } = require('./errors');
+const applySchema = require('./apply-schema');
+const {
   getExpressionAttributeNames,
   getExpressionAttributeValues,
   getKeyConditionExpression,
-} from './query-helpers/index';
+} = require('./query-helpers');
 
 const defaults = {
   timestamps: false,
   dynamoConfig: {},
 };
 
-export default ({
+module.exports = ({
   table,
   schema,
   dynamoConfig = defaults.dynamoConfig,
@@ -42,12 +42,12 @@ export default ({
       this.db = db;
     }
 
-    static get table() {
-      return table;
-    }
-
     static get db() {
       return db;
+    }
+
+    static get table() {
+      return table;
     }
 
     static async create(values) {

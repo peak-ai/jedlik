@@ -1,6 +1,6 @@
-import ModelWrapper from '../src/model';
-import DocumentClient from '../src/document-client';
-import * as QueryHelpers from '../src/query-helpers';
+const ModelWrapper = require('../src/model');
+const DocumentClient = require('../src/document-client');
+const QueryHelpers = require('../src/query-helpers');
 
 jest.mock('../src/document-client');
 jest.mock('../src/query-helpers');

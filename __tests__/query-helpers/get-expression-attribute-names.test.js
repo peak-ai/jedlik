@@ -1,4 +1,4 @@
-import getExpressionAttributeNames from '../../src/query-helpers/get-expression-attribute-names';
+const getExpressionAttributeNames = require('../../src/query-helpers/get-expression-attribute-names');
 
 it('handles a single plain query object', () => {
   expect(getExpressionAttributeNames({ id: 123 })).toEqual({ '#id': 'id' });

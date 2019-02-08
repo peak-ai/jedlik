@@ -1,8 +1,8 @@
-import getExpressionAttributeNames from './get-expression-attribute-names';
-import getExpressionAttributeValues from './get-expression-attribute-values';
-import getKeyConditionExpression from './get-key-condition-expression';
+const getExpressionAttributeNames = require('./get-expression-attribute-names');
+const getExpressionAttributeValues = require('./get-expression-attribute-values');
+const getKeyConditionExpression = require('./get-key-condition-expression');
 
-export {
+module.exports = {
   getExpressionAttributeNames,
   getExpressionAttributeValues,
   getKeyConditionExpression,

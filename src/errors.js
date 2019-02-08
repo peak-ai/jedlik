@@ -1,13 +1,18 @@
-export class JedlikError extends Error {
+class JedlikError extends Error {
   constructor(opts) {
     super(opts);
     this.name = this.constructor.name;
   }
 }
 
-export class ValidationError extends Error {
+class ValidationError extends Error {
   constructor(opts) {
     super(opts);
     this.name = this.constructor.name;
   }
 }
+
+module.exports = {
+  JedlikError,
+  ValidationError,
+};
