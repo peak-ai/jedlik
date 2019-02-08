@@ -21,9 +21,17 @@ beforeEach(() => {
   QueryHelpers.getKeyConditionExpression.mockReturnValue(mockKeyConditionExpression);
 });
 
+const schema = {
+  id: { required: true },
+  date: { required: true },
+  foobar: { required: true },
+};
+
+const fields = { id: 123, date: 111, foobar: 'foo' };
+
 describe('module initialization', () => {
   it('constructs a new DocumentClient bound to the given table name', () => {
-    ModelWrapper({ TableName: 'TEST' });
+    ModelWrapper({ table: 'TEST', schema });
     expect(DocumentClient).toHaveBeenCalledWith({
       params: { TableName: 'TEST' },
     });
@@ -36,7 +44,7 @@ describe('constructor', () => {
 
     DocumentClient.mockImplementationOnce(() => db);
 
-    const Model = ModelWrapper({ TableName: 'TEST' });
+    const Model = ModelWrapper({ table: 'TEST', schema });
 
     class TestClass extends Model {
       constructor({ id, date, foobar }) {
@@ -47,13 +55,13 @@ describe('constructor', () => {
       }
     }
 
-    const item = new TestClass({ id: 123, date: 111, foobar: 'foo' });
+    const item = new TestClass(fields);
     expect(item.db).toBe(db);
   });
 });
 
 describe('methods', () => {
-  const Model = ModelWrapper({ TableName: 'TEST' });
+  const Model = ModelWrapper({ table: 'TEST', schema });
 
   class TestClass extends Model {
     constructor({ id, date, foobar }) {
@@ -242,14 +250,14 @@ describe('methods', () => {
   describe('instance methods', () => {
     let item;
     beforeEach(() => {
-      item = new TestClass({ id: 123, date: 111, foobar: 'foo' });
+      item = new TestClass(fields);
     });
 
     describe('save', () => {
       it('makes correct put request to the document client with the instance', () => {
         item.save();
         expect(item.db.put).toHaveBeenCalledWith({
-          Item: item,
+          Item: fields,
         });
       });
 

@@ -1,18 +1,54 @@
+const moment = require('moment');
 const DocumentClient = require('./document-client');
+const { JedlikError } = require('./errors');
+const applySchema = require('./apply-schema');
 const {
   getExpressionAttributeNames,
   getExpressionAttributeValues,
   getKeyConditionExpression,
 } = require('./query-helpers');
 
-module.exports = ({ TableName }) => {
-  const db = new DocumentClient({
-    params: { TableName },
-  });
+const defaults = {
+  timestamps: false,
+  dynamoConfig: {},
+};
+
+module.exports = ({
+  table,
+  schema,
+  dynamoConfig = defaults.dynamoConfig,
+  timestamps = defaults.timestamps,
+} = defaults) => {
+  if (!table) {
+    throw new JedlikError('"table" option is required.');
+  }
+
+  if (!schema) {
+    throw new JedlikError('"schema" option is required.');
+  }
+
+  const clientConfig = {
+    ...dynamoConfig,
+    params: {
+      ...dynamoConfig.params,
+      TableName: table,
+    },
+  };
+
+  const db = new DocumentClient(clientConfig);
 
   class Model {
     constructor() {
       this.db = db;
+    }
+
+    static get table() {
+      return table;
+    }
+
+    static async create(values) {
+      const item = new this(values);
+      return item.save();
     }
 
     static async query(key, index = null) {
@@ -62,7 +98,19 @@ module.exports = ({ TableName }) => {
     }
 
     async save() {
-      await this.db.put({ Item: this });
+      if (timestamps) {
+        const timestamp = (typeof timestamps === 'function' ? timestamps() : moment.utc().valueOf());
+        if (this.createdAt) {
+          this.updatedAt = timestamp;
+        } else {
+          this.createdAt = timestamp;
+          this.updatedAt = null;
+        }
+      }
+
+      const payload = applySchema(schema, this, { timestamps });
+
+      await this.db.put({ Item: payload });
       return this;
     }
   }

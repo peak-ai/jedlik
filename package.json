@@ -24,7 +24,8 @@
   ],
   "dependencies": {
     "@babel/polyfill": "^7.0.0",
-    "aws-sdk": "^2.315.0"
+    "aws-sdk": "^2.315.0",
+    "moment": "^2.24.0"
   },
   "peerDependencies": {
     "aws-sdk": "^2.315.0"

@@ -1,0 +1,8 @@
+version: '3'
+services:
+  test_aws:
+    image: localstack/localstack
+    ports:
+      - 4569:4569
+    environment:
+      SERVICES: dynamodb
