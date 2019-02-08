@@ -7,7 +7,7 @@ export default {
     { format: 'cjs', file: 'dist/index.js' },
     { format: 'esm', file: 'es/index.js' },
   ],
-  external: ['aws-sdk', '@babel/polyfill'],
+  external: ['aws-sdk', 'moment', '@babel/polyfill'],
   plugins: [
     eslint({
       throwOnError: true,

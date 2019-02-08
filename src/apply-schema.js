@@ -1,4 +1,4 @@
-const { ValidationError } = require('./errors');
+import { ValidationError } from './errors';
 
 const applySchema = (schema, item, { timestamps }) => {
   const payload = { ...item };
@@ -22,4 +22,4 @@ const applySchema = (schema, item, { timestamps }) => {
   return payload;
 };
 
-module.exports = applySchema;
+export default applySchema;

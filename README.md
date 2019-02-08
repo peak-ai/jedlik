@@ -90,6 +90,12 @@ The underlying `AWS.DynamoDB.DocumentClient` service, exposed for performing cus
 
 All methods are promisified, so you can just do `thing.db.query(params).then(...)`, rather than passing a callback, or using the `.promise` method.
 
+#### static `db`
+
+The underlying `AWS.DynamoDB.DocumentClient` service, exposed for performing custom queries etc.
+
+All methods are promisified, so you can just do `thing.db.query(params).then(...)`, rather than passing a callback, or using the `.promise` method.
+
 #### static `table`
 
 The name of the table, passed in during the module initialization.

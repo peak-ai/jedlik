@@ -4,4 +4,4 @@ const getExpressionAttributeNames = key => Object.keys(key)
     [`#${k}`]: k,
   }), {});
 
-module.exports = getExpressionAttributeNames;
+export default getExpressionAttributeNames;

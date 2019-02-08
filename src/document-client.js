@@ -46,4 +46,4 @@ class DocumentClient extends AWS.DynamoDB.DocumentClient {
   }
 }
 
-module.exports = DocumentClient;
+export default DocumentClient;

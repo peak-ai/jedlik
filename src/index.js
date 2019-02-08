@@ -1,3 +1,4 @@
-require('@babel/polyfill');
+import '@babel/polyfill';
+import Model from './model';
 
-exports.Model = require('./model');
+export default Model;

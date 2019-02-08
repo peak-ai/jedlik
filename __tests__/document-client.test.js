@@ -1,5 +1,5 @@
-const AWS = require('aws-sdk');
-const DocumentClient = require('../src/document-client');
+import AWS from 'aws-sdk';
+import DocumentClient from '../src/document-client';
 
 jest.mock('aws-sdk');
 
