@@ -1,6 +1,6 @@
 {
   "name": "@peak-ai/jedlik",
-  "version": "0.0.3-alpha-2",
+  "version": "0.0.3-alpha-3",
   "description": "DynamoDB ODM",
   "main": "index.js",
   "repository": "https://github.com/PeakBI/jedlik",
