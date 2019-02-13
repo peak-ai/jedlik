@@ -112,10 +112,12 @@ module.exports = ({
         }
       }
 
-      const payload = applySchema(schema, this, { timestamps });
-
-      await this.db.put({ Item: payload });
+      await this.db.put({ Item: this.toObject() });
       return this;
+    }
+
+    toObject() {
+      return applySchema(schema, this, { timestamps });
     }
   }
 

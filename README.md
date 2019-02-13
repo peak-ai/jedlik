@@ -143,6 +143,10 @@ Resolves as `null`.
 Saves the instance of the model to DynamoDB, either overwriting the existing item with the given primary key, or creating a new one.
 Resolves with the instance.
 
+#### `toObject()`
+
+Returns a plain JavaScript object representation of the document according to the schema (with all internals/methods etc removed).
+
 ## Development
 
 ### Getting Started
