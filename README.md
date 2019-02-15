@@ -1,5 +1,7 @@
 # Jedlik
 
+![Jedinak](assets/jedinak.jpg)
+
 Jedlik is an extensible DynamoDB ODM for Node.
 
 Jedlik allows you to create plain JavaScript classes to represent entities in your domain.
