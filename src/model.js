@@ -113,8 +113,6 @@ module.exports = ({
         }
       }
 
-      getCreateKeyConditionExpression(uniqKey);
-
       const createParameters = {
         Item: this.toObject(),
       };
