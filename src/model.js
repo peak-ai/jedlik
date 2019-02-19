@@ -102,7 +102,7 @@ module.exports = ({
       return null;
     }
 
-    async save(uniqKey) {
+    async save(uniqKey, exists = false) {
       if (timestamps) {
         const timestamp = (typeof timestamps === 'function' ? timestamps() : moment.utc().valueOf());
         if (this.createdAt) {
@@ -117,8 +117,12 @@ module.exports = ({
         Item: this.toObject(),
       };
 
-      if (uniqKey) {
-        createParameters.KeyConditionExpression = getCreateKeyConditionExpression(uniqKey);
+      if (uniqKey && !exists) {
+        createParameters.KeyConditionExpression = getCreateKeyConditionExpression(uniqKey, exists);
+      }
+
+      if (uniqKey && exists) {
+        createParameters.KeyConditionExpression = getCreateKeyConditionExpression(uniqKey, exists);
       }
 
       await this.db.put(createParameters);
