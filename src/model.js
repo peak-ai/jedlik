@@ -6,6 +6,7 @@ const {
   getExpressionAttributeNames,
   getExpressionAttributeValues,
   getKeyConditionExpression,
+  getCreateKeyConditionExpression,
 } = require('./query-helpers');
 
 const defaults = {
@@ -50,9 +51,9 @@ module.exports = ({
       return table;
     }
 
-    static async create(values) {
+    static async create(values, uniqKey) {
       const item = new this(values);
-      return item.save();
+      return item.save(uniqKey);
     }
 
     static async query(key, index = null) {
@@ -101,7 +102,7 @@ module.exports = ({
       return null;
     }
 
-    async save() {
+    async save(uniqKey) {
       if (timestamps) {
         const timestamp = (typeof timestamps === 'function' ? timestamps() : moment.utc().valueOf());
         if (this.createdAt) {
@@ -112,7 +113,17 @@ module.exports = ({
         }
       }
 
-      await this.db.put({ Item: this.toObject() });
+      getCreateKeyConditionExpression(uniqKey);
+
+      const createParameters = {
+        Item: this.toObject(),
+      };
+
+      if (uniqKey) {
+        createParameters.KeyConditionExpression = getCreateKeyConditionExpression(uniqKey);
+      }
+
+      await this.db.put(createParameters);
       return this;
     }
 
