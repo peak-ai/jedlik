@@ -31,10 +31,14 @@ const fields = { id: 123, date: 111, foobar: 'foo' };
 
 describe('module initialization', () => {
   it('constructs a new DocumentClient bound to the given table name', () => {
-    ModelWrapper({ table: 'TEST', schema });
-    expect(DocumentClient).toHaveBeenCalledWith({
-      params: { TableName: 'TEST' },
+    const table = 'TEST';
+    const config = { host: 'localhost' };
+    ModelWrapper({
+      schema,
+      table,
+      config,
     });
+    expect(DocumentClient).toHaveBeenCalledWith(config, table);
   });
 });
 
@@ -79,7 +83,7 @@ describe('methods', () => {
           { id: 123, date: 111, foobar: 'foo' },
           { id: 456, date: 222, foobar: 'bar' },
         ];
-        DocumentClient.prototype.query.mockResolvedValue({ Items });
+        DocumentClient.prototype.query.mockResolvedValue(Items);
         expect.assertions(Items.length * 2);
         TestClass.query(jest.fn()).then((items) => {
           items.forEach((item, i) => {
@@ -102,41 +106,35 @@ describe('methods', () => {
 
       describe('query structure', () => {
         beforeEach(() => {
-          DocumentClient.prototype.query.mockResolvedValue({ Items: [] });
+          DocumentClient.prototype.query.mockResolvedValue([]);
         });
 
         it('executes the correct query', () => {
-          TestClass.query({ id: 123 });
-          expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            KeyConditionExpression: mockKeyConditionExpression,
-            ExpressionAttributeNames: mockExpressionAttributeNames,
-            ExpressionAttributeValues: mockExpressionAttributeValues,
-          });
+          const key = { id: 123 };
+          TestClass.query(key);
+          expect(DocumentClient.prototype.query).toHaveBeenCalledWith(key, undefined);
         });
 
         it('queries the given index', () => {
-          TestClass.query({ test: 'foobar' }, 'test-index');
-          expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            IndexName: 'test-index',
-            KeyConditionExpression: mockKeyConditionExpression,
-            ExpressionAttributeNames: mockExpressionAttributeNames,
-            ExpressionAttributeValues: mockExpressionAttributeValues,
-          });
+          const key = { test: 'foobar' };
+          const index = 'test-index';
+          TestClass.query(key, index);
+          expect(DocumentClient.prototype.query).toHaveBeenCalledWith(key, index);
         });
       });
     });
 
     describe('first', () => {
       it('resolves with an instance of the model from the first returned item', (done) => {
-        const Items = [
+        const items = [
           { id: 123, date: 111, foobar: 'foo' },
           { id: 456, date: 222, foobar: 'bar' },
         ];
-        DocumentClient.prototype.query.mockResolvedValue({ Items });
+        DocumentClient.prototype.query.mockResolvedValue(items);
         expect.assertions(2);
         TestClass.first(jest.fn()).then((item) => {
           expect(item).toBeInstanceOf(TestClass);
-          expect(item).toEqual(expect.objectContaining(Items[0]));
+          expect(item).toEqual(expect.objectContaining(items[0]));
           done();
         });
       });
@@ -153,26 +151,20 @@ describe('methods', () => {
 
       describe('query structure', () => {
         beforeEach(() => {
-          DocumentClient.prototype.query.mockResolvedValue({ Items: [] });
+          DocumentClient.prototype.query.mockResolvedValue([]);
         });
 
         it('executes the correct basic query', () => {
-          TestClass.first({ id: 123 });
-          expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            KeyConditionExpression: mockKeyConditionExpression,
-            ExpressionAttributeNames: mockExpressionAttributeNames,
-            ExpressionAttributeValues: mockExpressionAttributeValues,
-          });
+          const key = { id: 123 };
+          TestClass.first(key);
+          expect(DocumentClient.prototype.query).toHaveBeenCalledWith(key, undefined);
         });
 
         it('queries the given index', () => {
-          TestClass.first({ test: 'foobar' }, 'test-index');
-          expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            IndexName: 'test-index',
-            KeyConditionExpression: mockKeyConditionExpression,
-            ExpressionAttributeNames: mockExpressionAttributeNames,
-            ExpressionAttributeValues: mockExpressionAttributeValues,
-          });
+          const key = { test: 'foobar' };
+          const index = 'test-index';
+          TestClass.first(key, index);
+          expect(DocumentClient.prototype.query).toHaveBeenCalledWith(key, index);
         });
       });
     });
@@ -180,7 +172,7 @@ describe('methods', () => {
     describe('get', () => {
       it('resolves with instances of the model from the returned data', (done) => {
         const Item = { id: 123, date: 111, foobar: 'foo' };
-        DocumentClient.prototype.get.mockResolvedValue({ Item });
+        DocumentClient.prototype.get.mockResolvedValue(Item);
         expect.assertions(2);
         TestClass.get(jest.fn()).then((item) => {
           expect(item).toBeInstanceOf(TestClass);
@@ -190,7 +182,7 @@ describe('methods', () => {
       });
 
       it('resolves with null if the item is not found', (done) => {
-        DocumentClient.prototype.get.mockResolvedValue({});
+        DocumentClient.prototype.get.mockResolvedValue(null);
         expect.assertions(1);
         TestClass.get(jest.fn()).then((item) => {
           expect(item).toBeNull();

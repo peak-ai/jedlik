@@ -2,22 +2,18 @@ const moment = require('moment');
 const DocumentClient = require('./document-client');
 const { JedlikError } = require('./errors');
 const applySchema = require('./apply-schema');
-const {
-  getExpressionAttributeNames,
-  getExpressionAttributeValues,
-  getKeyConditionExpression,
-} = require('./query-helpers');
 
 const defaults = {
   timestamps: false,
-  dynamoConfig: {},
+  config: {},
 };
 
 module.exports = ({
   table,
   schema,
-  dynamoConfig = defaults.dynamoConfig,
+  config = defaults.config,
   timestamps = defaults.timestamps,
+  client = null,
 } = defaults) => {
   if (!table) {
     throw new JedlikError('"table" option is required.');
@@ -27,15 +23,10 @@ module.exports = ({
     throw new JedlikError('"schema" option is required.');
   }
 
-  const clientConfig = {
-    ...dynamoConfig,
-    params: {
-      ...dynamoConfig.params,
-      TableName: table,
-    },
-  };
-
-  const db = new DocumentClient(clientConfig);
+  let db = new DocumentClient(config, table);
+  if (client != null) {
+    db = client;
+  }
 
   class Model {
     constructor() {
@@ -55,26 +46,19 @@ module.exports = ({
       return item.save();
     }
 
-    static async query(key, index = null) {
-      const params = {
-        KeyConditionExpression: getKeyConditionExpression(key),
-        ExpressionAttributeNames: getExpressionAttributeNames(key),
-        ExpressionAttributeValues: getExpressionAttributeValues(key),
-      };
+    static async query(key, index) {
+      const items = await db.query(key, index);
 
-      if (index) {
-        params.IndexName = index;
+      if (!items || items.length === 0) {
+        return null;
       }
-
-      const { Items } = await db.query(params);
-
-      return Items.map(item => new this(item));
+      return items.map(item => new this(item));
     }
 
-    static async first(key, index = null) {
+    static async first(key, index) {
       const items = await this.query(key, index);
 
-      if (items.length === 0) {
+      if (!items || items.length === 0) {
         return null;
       }
 
@@ -82,15 +66,15 @@ module.exports = ({
     }
 
     static async get(key) {
-      const { Item } = await db.get({
+      const item = await db.get({
         Key: key,
       });
 
-      if (!Item) {
+      if (!item) {
         return null;
       }
 
-      return new this(Item);
+      return new this(item);
     }
 
     static async delete(key) {

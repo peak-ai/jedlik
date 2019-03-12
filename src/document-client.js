@@ -1,6 +1,22 @@
 const AWS = require('aws-sdk');
+const {
+  getExpressionAttributeNames,
+  getExpressionAttributeValues,
+  getKeyConditionExpression,
+} = require('./query-helpers');
 
 class DocumentClient extends AWS.DynamoDB.DocumentClient {
+  constructor(params, table) {
+    const clientConfig = {
+      ...params,
+      params: {
+        ...params.params,
+        TableName: table,
+      },
+    };
+    super(clientConfig);
+  }
+
   batchGet(params) {
     return super.batchGet(params).promise();
   }
@@ -17,20 +33,40 @@ class DocumentClient extends AWS.DynamoDB.DocumentClient {
     return super.delete(params).promise();
   }
 
-  get(params) {
-    return super.get(params).promise();
+  async get(params) {
+    const res = await super.get(params).promise();
+    if (!res || !res.Item) {
+      return null;
+    }
+    return res.Item;
   }
 
   put(params) {
     return super.put(params).promise();
   }
 
-  query(params) {
-    return super.query(params).promise();
+  async query(key, index) {
+    const params = {
+      KeyConditionExpression: getKeyConditionExpression(key),
+      ExpressionAttributeNames: getExpressionAttributeNames(key),
+      ExpressionAttributeValues: getExpressionAttributeValues(key),
+    };
+    if (index) {
+      params.IndexName = index;
+    }
+    const res = await super.query(params).promise();
+    if (!res) {
+      return null;
+    }
+    return res.Items;
   }
 
-  scan(params) {
-    return super.scan(params).promise();
+  async scan(params) {
+    const res = await super.scan(params).promise();
+    if (!res) {
+      return null;
+    }
+    return res.Items;
   }
 
   transactGet(params) {

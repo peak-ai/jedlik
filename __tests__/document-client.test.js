@@ -1,14 +1,18 @@
 const AWS = require('aws-sdk');
 const DocumentClient = require('../src/document-client');
+const QueryHelpers = require('../src/query-helpers');
 
 jest.mock('aws-sdk');
+jest.mock('../src/query-helpers');
 
 const data = jest.fn();
 const error = jest.fn();
 const params = jest.fn();
 const awsPromise = jest.fn();
 
-const documentClient = new DocumentClient();
+const docClientParams = {};
+const table = 'TEST';
+const documentClient = new DocumentClient(docClientParams, table);
 
 beforeEach(() => {
   AWS.DynamoDB.DocumentClient.mockClear();
@@ -139,7 +143,7 @@ describe('get', () => {
   });
 
   it('resolves with the data if get operation is successful', () => {
-    awsPromise.mockResolvedValue(data);
+    awsPromise.mockResolvedValue({ Item: data });
     expect.assertions(1);
     expect(documentClient.get(jest.fn())).resolves.toBe(data);
   });
@@ -178,7 +182,19 @@ describe('put', () => {
 });
 
 describe('query', () => {
+  let mockExpressionAttributeNames;
+  let mockExpressionAttributeValues;
+  let mockKeyConditionExpression;
+
   beforeEach(() => {
+    mockExpressionAttributeNames = jest.fn();
+    mockExpressionAttributeValues = jest.fn();
+    mockKeyConditionExpression = jest.fn();
+
+    QueryHelpers.getExpressionAttributeNames.mockReturnValue(mockExpressionAttributeNames);
+    QueryHelpers.getExpressionAttributeValues.mockReturnValue(mockExpressionAttributeValues);
+    QueryHelpers.getKeyConditionExpression.mockReturnValue(mockKeyConditionExpression);
+
     AWS.DynamoDB.DocumentClient.prototype.query.mockReturnValue({
       promise: awsPromise,
     });
@@ -186,12 +202,18 @@ describe('query', () => {
 
   it('calls the AWS DocumentClient query', () => {
     expect.assertions(1);
-    documentClient.query(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.query).toHaveBeenCalledWith(params);
+    const key = { id: 123 };
+    const result = {
+      KeyConditionExpression: mockKeyConditionExpression,
+      ExpressionAttributeNames: mockExpressionAttributeNames,
+      ExpressionAttributeValues: mockExpressionAttributeValues,
+    };
+    documentClient.query(key);
+    expect(AWS.DynamoDB.DocumentClient.prototype.query).toHaveBeenCalledWith(result);
   });
 
   it('resolves with the data if query operation is successful', () => {
-    awsPromise.mockResolvedValue(data);
+    awsPromise.mockResolvedValue({ Items: data });
     expect.assertions(1);
     expect(documentClient.query(jest.fn())).resolves.toBe(data);
   });
@@ -217,7 +239,7 @@ describe('scan', () => {
   });
 
   it('resolves with the data if scan operation is successful', () => {
-    awsPromise.mockResolvedValue(data);
+    awsPromise.mockResolvedValue({ Items: data });
     expect.assertions(1);
     expect(documentClient.scan(jest.fn())).resolves.toBe(data);
   });
