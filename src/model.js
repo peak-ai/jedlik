@@ -50,7 +50,7 @@ module.exports = ({
       const items = await db.query(key, index);
 
       if (!items || items.length === 0) {
-        return null;
+        return [];
       }
       return items.map(item => new this(item));
     }
