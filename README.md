@@ -158,9 +158,13 @@ Returns a plain JavaScript object representation of the document according to th
 
 ### Build
 
-- `yarn build` uses babel and rollup to output two builds:
-- - a CommonJS build in `dist`
-- - a ES Module build in `es`
+- `yarn build` compiles the TypeScript code into a `lib` directory.
+
+### Local installation
+
+- When developing, if you need to test a change on another project you have two options:
+- - **Preferred** - in the `package.json` of the other project, set the Jedlik version to `file:/absolute/path/to/jedlik/project`.
+- - Publish the package to npm with the `develop` tag - `yarn publish --tag develop`. You can then install the unstable version using `yarn add @peak-ai/jedlik@develop` without having to increase the version number. This is good for using the unstable version on the deployed dev environment.
 
 ### Test
 
@@ -168,7 +172,5 @@ Returns a plain JavaScript object representation of the document according to th
 
 ### Publish
 
-- Use `yarn publish` to publish the package to the npm registry.
-- When developing, if you need to test a change on another project you have two options:
-- - **Preferred** - in the `package.json` of the other project, set the Jedlik version to `file:/absolute/path/to/jedlik/project`.
-- - Publish the package to npm with the `develop` tag - `yarn publish --tag develop`. You can then install the unstable version using `yarn add @peak-ai/jedlik@develop` without having to increase the version number. This is good for using the unstable version on the deployed dev environment.
+- Use `yarn version` to increase the package version. Before increasing the version, tests and lint checks will be run. This will add a new git tag - [See here for more info](https://yarnpkg.com/lang/en/docs/cli/version/#toc-git-tags). There is also a `postversion` script that will push the new version and tags to GitHub.
+- Use `yarn publish` to publish the package to the npm registry. Before publishing, tests and lint checks will be run, and the `build` script will be run automatically.

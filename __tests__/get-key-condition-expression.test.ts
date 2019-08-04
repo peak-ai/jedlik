@@ -1,4 +1,4 @@
-const getKeyConditionExpression = require('../../src/query-helpers/get-key-condition-expression');
+import getKeyConditionExpression from '../src/query-helpers/get-key-condition-expression';
 
 it('handles a single plain query object', () => {
   expect(getKeyConditionExpression({ id: 123 })).toEqual('#id = :id');
