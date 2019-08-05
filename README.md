@@ -24,7 +24,11 @@ const jedlik = require('@peak-ai/jedlik');
 const Model = jedlik.Model({
   // the name of the DynamoDB table the model should write to
   // it is assumed this table exists
-  TableName: 'users',
+  table: 'users',
+  schema: {
+    id: { required: true },
+    name: { required: false, default: 'John' },
+  },
 });
 
 class User extends Model {
@@ -32,16 +36,33 @@ class User extends Model {
     this.id = id;
     this.name = name;
   }
+  
+  sayHello() {
+    console.log(this.name);
+  }
 }
 
 const user = new User({ id: 1, name: 'Fred' });
 
 user.save()
   .then(() => User.get({ id: 1 })) // query on the table's key schema
-  .then((data) => {
-    console.log(data)
+  .then((u) => {
+    console.log(u);
     /*
     User {
+      id: 1,
+      name: 'Fred'
+    }
+    */
+    
+    // u is an instance of the User class, with associated methods
+    u.sayHello();
+    // console.log's 'Fred'
+    
+    // u also has the methods from Jedlik's Model class
+    console.log(u.toObject());
+    /*
+    Object {
       id: 1,
       name: 'Fred'
     }
@@ -155,12 +176,6 @@ Returns a plain JavaScript object representation of the document according to th
 
 - `git clone git@github.com:PeakBI/jedlik.git`
 - `yarn`
-
-### Build
-
-- `yarn build` uses babel and rollup to output two builds:
-- - a CommonJS build in `dist`
-- - a ES Module build in `es`
 
 ### Test
 
