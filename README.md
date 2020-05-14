@@ -36,7 +36,7 @@ class User extends Model {
     this.id = id;
     this.name = name;
   }
-  
+
   sayHello() {
     console.log(this.name);
   }
@@ -54,11 +54,11 @@ user.save()
       name: 'Fred'
     }
     */
-    
+
     // u is an instance of the User class, with associated methods
     u.sayHello();
     // console.log's 'Fred'
-    
+
     // u also has the methods from Jedlik's Model class
     console.log(u.toObject());
     /*
@@ -139,9 +139,24 @@ const thing = new Thing(item);
 thing.save();
 ```
 
-#### static `query(key, [index = null])`
+#### static `query(key, [index = null], [filters = null])`
 
-Resolves with an array of items which match the given key parameters. Take an optional index parameter to query against a secondary index.
+Resolves with an array of items which match the given key parameters. Take an optional index parameter to query against a secondary index. A third `filters` parameter can be provided to apply a filter expression to the underlying query:
+
+```js
+await segment.query(
+  { tenant: 'my-tenant' },
+  'my-index',
+  {
+    type: 'ai', // direct value, defaulting to the '=' operator
+    createdAt: { // filter object, allowing different operators to be specified
+      operator: '>',
+      value: Date.now() - 86400 * 1000,
+    },
+  },
+);
+```
+
 Returned items are instances of the model.
 
 #### static `first(key, [index = null])`
