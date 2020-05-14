@@ -148,7 +148,7 @@ await segment.query(
   { tenant: 'my-tenant' },
   'my-index',
   {
-    type: 'ai', // direct value, defaulting to the '=' operator
+    aiDriven: true, // direct value, defaulting to the '=' operator
     createdAt: { // filter object, allowing different operators to be specified
       operator: '>',
       value: Date.now() - 86400 * 1000,
