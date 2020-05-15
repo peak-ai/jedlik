@@ -144,7 +144,7 @@ thing.save();
 Resolves with an array of items which match the given key parameters. Take an optional index parameter to query against a secondary index. A third `filters` parameter can be provided to apply a filter expression to the underlying query:
 
 ```js
-await segment.query(
+await Segment.query(
   { tenant: 'my-tenant' },
   'my-index',
   {
@@ -159,7 +159,7 @@ await segment.query(
 
 Returned items are instances of the model.
 
-#### static `first(key, [index = null])`
+#### static `first(key, [index = null], [filters = null])`
 
 Convenience method which returns the first item found by the `Model.query` method, or null if no items are found.
 
