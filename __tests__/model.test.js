@@ -193,6 +193,16 @@ describe('methods', () => {
             ExpressionAttributeValues: mockExpressionAttributeValues,
           });
         });
+
+        it('supports filter expressions', () => {
+          TestClass.first({ test: 'foobar' }, null, { refreshFrequency: 'Monthly' });
+          expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
+            KeyConditionExpression: mockKeyConditionExpression,
+            FilterExpression: mockFilterExpression,
+            ExpressionAttributeNames: mockExpressionAttributeNames,
+            ExpressionAttributeValues: mockExpressionAttributeValues,
+          });
+        });
       });
     });
 

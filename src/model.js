@@ -78,8 +78,8 @@ module.exports = ({
       return Items.map(item => new this(item));
     }
 
-    static async first(key, index = null) {
-      const items = await this.query(key, index);
+    static async first(key, index = null, filters = null) {
+      const items = await this.query(key, index, filters);
 
       if (items.length === 0) {
         return null;
