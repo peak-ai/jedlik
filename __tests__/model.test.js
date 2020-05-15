@@ -8,6 +8,7 @@ jest.mock('../src/query-helpers');
 let mockExpressionAttributeNames;
 let mockExpressionAttributeValues;
 let mockKeyConditionExpression;
+let mockFilterExpression;
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -15,10 +16,12 @@ beforeEach(() => {
   mockExpressionAttributeNames = jest.fn();
   mockExpressionAttributeValues = jest.fn();
   mockKeyConditionExpression = jest.fn();
+  mockFilterExpression = jest.fn();
 
   QueryHelpers.getExpressionAttributeNames.mockReturnValue(mockExpressionAttributeNames);
   QueryHelpers.getExpressionAttributeValues.mockReturnValue(mockExpressionAttributeValues);
   QueryHelpers.getKeyConditionExpression.mockReturnValue(mockKeyConditionExpression);
+  QueryHelpers.getFilterExpression.mockReturnValue(mockFilterExpression);
 });
 
 const schema = {
@@ -123,6 +126,22 @@ describe('methods', () => {
             ExpressionAttributeValues: mockExpressionAttributeValues,
           });
         });
+
+        it('computes and applies a filter expression if a filters object is provided', () => {
+          TestClass.query({ test: 'foobar' }, null, {
+            name: {
+              operator: '>=',
+              value: '20',
+            },
+          });
+
+          expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
+            KeyConditionExpression: mockKeyConditionExpression,
+            FilterExpression: mockFilterExpression,
+            ExpressionAttributeNames: mockExpressionAttributeNames,
+            ExpressionAttributeValues: mockExpressionAttributeValues,
+          });
+        });
       });
     });
 
@@ -170,6 +189,16 @@ describe('methods', () => {
           expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
             IndexName: 'test-index',
             KeyConditionExpression: mockKeyConditionExpression,
+            ExpressionAttributeNames: mockExpressionAttributeNames,
+            ExpressionAttributeValues: mockExpressionAttributeValues,
+          });
+        });
+
+        it('supports filter expressions', () => {
+          TestClass.first({ test: 'foobar' }, null, { refreshFrequency: 'Monthly' });
+          expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
+            KeyConditionExpression: mockKeyConditionExpression,
+            FilterExpression: mockFilterExpression,
             ExpressionAttributeNames: mockExpressionAttributeNames,
             ExpressionAttributeValues: mockExpressionAttributeValues,
           });

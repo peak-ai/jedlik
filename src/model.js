@@ -6,6 +6,7 @@ const {
   getExpressionAttributeNames,
   getExpressionAttributeValues,
   getKeyConditionExpression,
+  getFilterExpression,
 } = require('./query-helpers');
 
 const defaults = {
@@ -55,12 +56,18 @@ module.exports = ({
       return item.save();
     }
 
-    static async query(key, index = null) {
+    static async query(key, index = null, filters = null) {
+      const attributes = { ...key, ...filters };
+
       const params = {
         KeyConditionExpression: getKeyConditionExpression(key),
-        ExpressionAttributeNames: getExpressionAttributeNames(key),
-        ExpressionAttributeValues: getExpressionAttributeValues(key),
+        ExpressionAttributeNames: getExpressionAttributeNames(attributes),
+        ExpressionAttributeValues: getExpressionAttributeValues(attributes),
       };
+
+      if (filters) {
+        params.FilterExpression = getFilterExpression(filters);
+      }
 
       if (index) {
         params.IndexName = index;
@@ -71,8 +78,8 @@ module.exports = ({
       return Items.map(item => new this(item));
     }
 
-    static async first(key, index = null) {
-      const items = await this.query(key, index);
+    static async first(key, index = null, filters = null) {
+      const items = await this.query(key, index, filters);
 
       if (items.length === 0) {
         return null;
