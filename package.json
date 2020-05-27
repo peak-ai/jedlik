@@ -1,6 +1,6 @@
 {
   "name": "@peak-ai/jedlik",
-  "version": "0.0.3-alpha-3",
+  "version": "0.0.4-alpha-1",
   "description": "DynamoDB ODM",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
