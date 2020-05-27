@@ -35,13 +35,13 @@ const tableName = 'users';
 
 describe('constructor', () => {
   it('passes the parameters into the database constructor', () => {
-    const model = new Model<any>(tableName, config);
+    const model = new Model<any>({ table: tableName }, config);
     expect.assertions(1);
     expect(MockDatabase).toHaveBeenCalledWith(tableName, config);
   });
 
   it('creates a new event handler', () => {
-    const model = new Model<any>(tableName, config);
+    const model = new Model<any>({ table: tableName }, config);
     expect.assertions(1);
     expect(MockEvents).toHaveBeenCalled();
   });
@@ -55,7 +55,7 @@ describe('methods', () => {
     MockDatabase.mockImplementationOnce(() => mockDatabase);
     mockEvents = new Events();
     MockEvents.mockImplementationOnce(() => mockEvents);
-    model = new Model<any>(tableName, config);
+    model = new Model<any>({ table: tableName }, config);
   });
 
   describe('create', () => {
