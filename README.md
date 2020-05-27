@@ -28,7 +28,7 @@ interface UserProps {
 
 // the name of the DynamoDB table the model should write to
 // it is assumed this table exists
-const Users = new jedlik.Model<UserProps>('users');
+const Users = new jedlik.Model<UserProps>({ table: 'users' });
 
 const user = Users.create({ id: 1, name: 'Fred' }); // create a new document locally
 
