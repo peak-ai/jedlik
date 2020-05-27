@@ -1,5 +1,5 @@
 import { DynamoDB } from 'aws-sdk';
-import DocumentClient from '../src/document-client';
+import { DocumentClient } from '../src/document-client';
 
 jest.mock('aws-sdk');
 

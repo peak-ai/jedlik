@@ -1,303 +1,266 @@
-import { Endpoint } from 'aws-sdk';
-import DocumentClient from '../src/document-client';
-import JedlikModel from '../src/model';
+import { mocked } from 'ts-jest/utils';
+import { Model } from '../src/model';
+import { Database } from '../src/database';
+import { Document } from '../src/document';
+import { Events } from '../src/events';
 
-const dynamoConfig = {
-  endpoint: new Endpoint('http://localhost:4569').href,
-  region: 'local',
+jest.mock('../src/database');
+jest.mock('../src/document');
+jest.mock('../src/events');
+
+/* tslint:disable:variable-name */
+const Mockument = mocked(Document);
+const MockDatabase = mocked(Database);
+const MockEvents = mocked(Events);
+/* tslint:enable:variable-name */
+
+const getMockObjects = () => {
+  const data = [];
+  for (let i = 0; i < Math.random() * 5; i += 1) {
+    data.push(jest.fn());
+  }
+  return data;
 };
 
-const ddb = new DocumentClient(dynamoConfig);
-
-// tslint:disable-next-line: variable-name
-const UserModel = JedlikModel({
-  dynamoConfig,
-  schema: {
-    id: { required: true },
-  },
-  table: 'users',
+beforeEach(() => {
+  MockDatabase.mockClear();
+  Mockument.mockClear();
+  MockEvents.mockClear();
 });
 
-beforeEach(async () => {
-  const { Items } = await ddb.scan({ TableName: 'users' });
-
-  if (Items) {
-    await Promise.all(Items.map(({ id }) => ddb.delete({
-      Key: { id },
-      TableName: 'users',
-    })));
-  }
-});
-
-interface IUser {
-  id: string;
-}
-
-interface IUserInput {
-  id: string;
-}
-
-class User extends UserModel implements IUser {
-  public id: string;
-
-  constructor({ id }: IUserInput) {
-    super();
-    this.id = id;
-  }
-}
-
-describe('static properties', () => {
-  it('has a db property which is a instance of the DocumentClient', () => {
-    expect.assertions(1);
-
-    expect(User.db).toBeInstanceOf(DocumentClient);
-  });
-
-  it('has a table property which is the name of the table the model is bound to', () => {
-    expect.assertions(1);
-
-    expect(User.table).toBe('users');
-  });
-});
+let mockDatabase: Database<any>;
+let mockEvents: Events<any>;
+const config = {};
+const tableName = 'users';
 
 describe('constructor', () => {
-  it('has a db property which is an instance of DocumentClient', () => {
+  it('passes the parameters into the database constructor', () => {
+    const model = new Model<any>(tableName, config);
     expect.assertions(1);
-
-    const user = new User({ id: '123' });
-
-    expect(user.db).toBeInstanceOf(DocumentClient);
+    expect(MockDatabase).toHaveBeenCalledWith(tableName, config);
   });
 
-  it('does not write to the database', async () => {
+  it('creates a new event handler', () => {
+    const model = new Model<any>(tableName, config);
     expect.assertions(1);
-
-    const user = new User({ id: '123' });
-
-    const { Count } = await ddb.scan({ TableName: 'users' });
-
-    expect(Count).toBe(0);
+    expect(MockEvents).toHaveBeenCalled();
   });
 });
 
-describe('instance methods', () => {
-  describe('save', () => {
-    let user: User;
+describe('methods', () => {
+  let model: Model<any>;
 
-    beforeEach(() => {
-      user = new User({ id: '123' });
-    });
+  beforeEach(() => {
+    mockDatabase = new Database(tableName);
+    MockDatabase.mockImplementationOnce(() => mockDatabase);
+    mockEvents = new Events();
+    MockEvents.mockImplementationOnce(() => mockEvents);
+    model = new Model<any>(tableName, config);
+  });
 
-    it('saves the item to the database', async () => {
+  describe('create', () => {
+    it('returns a new Document', () => {
       expect.assertions(2);
 
-      await user.save();
+      const props = jest.fn();
+      const result = model.create(props);
 
-      const { Count, Items } = await ddb.scan({ TableName: 'users' });
-
-      expect(Count).toBe(1);
-
-      if (Items) {
-        expect(Items[0]).toEqual({
-          id: '123',
-        });
-      }
+      expect(Mockument).toHaveBeenCalledWith(mockDatabase, mockEvents, props);
+      expect(result).toBeInstanceOf(Document);
     });
+  });
 
-    it('resolves with the instance itself', async () => {
+  describe('query', () => {
+    it('queries the database with the given parameters', async () => {
       expect.assertions(1);
 
-      const result = await user.save();
+      const key = { id: Math.random() * 100 };
+      const options = {};
 
-      expect(result).toBe(user);
+      (mockDatabase.query as jest.Mock).mockResolvedValue([]);
+      await model.query(key, options);
+
+      expect(mockDatabase.query).toHaveBeenCalledWith(key, options);
     });
 
-    it('rejects with the document client error', async () => {
+    it('maps each database item to a document', async () => {
+      const items = getMockObjects();
+      expect.assertions(1 + items.length);
+
+      (mockDatabase.query as jest.Mock).mockResolvedValue(items);
+
+      await model.query({}, {});
+
+      expect(Mockument).toHaveBeenCalledTimes(items.length);
+
+      items.forEach((item, i) => {
+        expect(Mockument).toHaveBeenNthCalledWith(i + 1, mockDatabase, mockEvents, item);
+      });
+    });
+
+    it('returns an array of documents', async () => {
+      const items = getMockObjects();
+
+      expect.assertions(1 + items.length);
+
+      (mockDatabase.query as jest.Mock).mockResolvedValue(items);
+
+      const results = await model.query({}, {});
+
+      expect(results.length).toEqual(items.length);
+
+      results.forEach((result) => {
+        expect(result).toBeInstanceOf(Document);
+      });
+    });
+  });
+
+  describe('scan', () => {
+    it('scans the database with the given parameters', async () => {
       expect.assertions(1);
 
-      const error = jest.fn();
-      user.db.put = jest.fn().mockRejectedValue(error);
+      const options = {};
 
-      try {
-        await user.save();
-      } catch (e) {
-        expect(e).toBe(error);
-      }
+      (mockDatabase.scan as jest.Mock).mockResolvedValue([]);
+
+      await model.scan(options);
+
+      expect(mockDatabase.scan).toHaveBeenCalledWith(options);
+    });
+
+    it('maps each database item to a document', async () => {
+      const items = getMockObjects();
+      expect.assertions(1 + items.length);
+
+      (mockDatabase.scan as jest.Mock).mockResolvedValue(items);
+
+      await model.scan({});
+
+      expect(Mockument).toHaveBeenCalledTimes(items.length);
+
+      items.forEach((item, i) => {
+        expect(Mockument).toHaveBeenNthCalledWith(i + 1, mockDatabase, mockEvents, item);
+      });
+    });
+
+    it('returns an array of documents', async () => {
+      const items = getMockObjects();
+
+      expect.assertions(1 + items.length);
+
+      (mockDatabase.scan as jest.Mock).mockResolvedValue(items);
+
+      const results = await model.scan({});
+
+      expect(results.length).toEqual(items.length);
+
+      results.forEach((result) => {
+        expect(result).toBeInstanceOf(Document);
+      });
+    });
+  });
+
+  describe('first', () => {
+    it('queries the database with the given parameters', async () => {
+      expect.assertions(1);
+
+      const key = { id: Math.random() * 100 };
+      const options = {};
+
+      (mockDatabase.first as jest.Mock).mockResolvedValue(jest.fn());
+      await model.first(key, options);
+
+      expect(mockDatabase.first).toHaveBeenCalledWith(key, options);
+    });
+
+    it('maps the database item to a document', async () => {
+      expect.assertions(2);
+
+      const item = jest.fn();
+
+      (mockDatabase.first as jest.Mock).mockResolvedValue(item);
+
+      await model.first({}, {});
+
+      expect(Mockument).toHaveBeenCalledTimes(1);
+      expect(Mockument).toHaveBeenNthCalledWith(1, mockDatabase, mockEvents, item);
+    });
+
+    it('returns a document', async () => {
+      expect.assertions(1);
+
+      (mockDatabase.first as jest.Mock).mockResolvedValue(jest.fn());
+
+      const result = await model.first({}, {});
+
+      expect(result).toBeInstanceOf(Document);
+    });
+  });
+
+  describe('get', () => {
+    it('queries the database with the given key', async () => {
+      expect.assertions(1);
+
+      const key = { id: Math.random() * 100 };
+
+      (mockDatabase.get as jest.Mock).mockResolvedValue(jest.fn());
+      await model.get(key);
+
+      expect(mockDatabase.get).toHaveBeenCalledWith(key);
+    });
+
+    it('maps the database item to a document', async () => {
+      expect.assertions(2);
+
+      const item = jest.fn();
+
+      (mockDatabase.get as jest.Mock).mockResolvedValue(item);
+
+      await model.get({});
+
+      expect(Mockument).toHaveBeenCalledTimes(1);
+      expect(Mockument).toHaveBeenNthCalledWith(1, mockDatabase, mockEvents, item);
+    });
+
+    it('returns a document', async () => {
+      expect.assertions(1);
+
+      (mockDatabase.get as jest.Mock).mockResolvedValue(jest.fn());
+
+      const result = await model.get({});
+
+      expect(result).toBeInstanceOf(Document);
+    });
+  });
+
+  describe('delete', () => {
+    it('deletes the database item with the given key', async () => {
+      expect.assertions(1);
+
+      const key = { id: Math.random() * 100 };
+
+      await model.delete(key);
+
+      expect(mockDatabase.delete).toHaveBeenCalledWith(key);
+    });
+
+    it('emits a delete event', async () => {
+      expect.assertions(1);
+
+      await model.delete({});
+
+      expect(MockEvents.prototype.emit).toHaveBeenCalledWith('delete');
+    });
+  });
+
+  describe('on', () => {
+    it('registers an event handler', () => {
+      const event = 'delete';
+      const handler = jest.fn();
+      model.on(event, handler);
+
+      expect(MockEvents.prototype.on).toHaveBeenCalledWith(event, handler);
     });
   });
 });
 
-  // describe('static methods', () => {
-    // describe('query', () => {
-      // it('resolves with instances of the model from the returned data', (done) => {
-        // const Items = [
-          // { id: 123, date: 111, foobar: 'foo' },
-          // { id: 456, date: 222, foobar: 'bar' },
-        // ];
-        // DocumentClient.prototype.query.mockResolvedValue({ Items });
-        // expect.assertions(Items.length * 2);
-        // TestClass.query(jest.fn()).then((items) => {
-          // items.forEach((item, i) => {
-            // expect(item).toBeInstanceOf(TestClass);
-            // expect(item).toEqual(items[i]);
-          // });
-          // done();
-        // });
-      // });
-//
-      // it('rejects with the document client error', (done) => {
-        // expect.assertions(1);
-        // const error = jest.fn();
-        // DocumentClient.prototype.query.mockRejectedValue(error);
-        // TestClass.query(jest.fn()).catch((e) => {
-          // expect(e).toBe(error);
-          // done();
-        // });
-      // });
-//
-      // describe('query structure', () => {
-        // beforeEach(() => {
-          // DocumentClient.prototype.query.mockResolvedValue({ Items: [] });
-        // });
-//
-        // it('executes the correct query', () => {
-          // TestClass.query({ id: 123 });
-          // expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            // KeyConditionExpression: mockKeyConditionExpression,
-            // ExpressionAttributeNames: mockExpressionAttributeNames,
-            // ExpressionAttributeValues: mockExpressionAttributeValues,
-          // });
-        // });
-//
-        // it('queries the given index', () => {
-          // TestClass.query({ test: 'foobar' }, 'test-index');
-          // expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            // IndexName: 'test-index',
-            // KeyConditionExpression: mockKeyConditionExpression,
-            // ExpressionAttributeNames: mockExpressionAttributeNames,
-            // ExpressionAttributeValues: mockExpressionAttributeValues,
-          // });
-        // });
-      // });
-    // });
-//
-    // describe('first', () => {
-      // it('resolves with an instance of the model from the first returned item', (done) => {
-        // const Items = [
-          // { id: 123, date: 111, foobar: 'foo' },
-          // { id: 456, date: 222, foobar: 'bar' },
-        // ];
-        // DocumentClient.prototype.query.mockResolvedValue({ Items });
-        // expect.assertions(2);
-        // TestClass.first(jest.fn()).then((item) => {
-          // expect(item).toBeInstanceOf(TestClass);
-          // expect(item).toEqual(expect.objectContaining(Items[0]));
-          // done();
-        // });
-      // });
-//
-      // it('rejects with the document client error', (done) => {
-        // expect.assertions(1);
-        // const error = jest.fn();
-        // DocumentClient.prototype.query.mockRejectedValue(error);
-        // TestClass.first(jest.fn()).catch((e) => {
-          // expect(e).toBe(error);
-          // done();
-        // });
-      // });
-//
-      // describe('query structure', () => {
-        // beforeEach(() => {
-          // DocumentClient.prototype.query.mockResolvedValue({ Items: [] });
-        // });
-//
-        // it('executes the correct basic query', () => {
-          // TestClass.first({ id: 123 });
-          // expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            // KeyConditionExpression: mockKeyConditionExpression,
-            // ExpressionAttributeNames: mockExpressionAttributeNames,
-            // ExpressionAttributeValues: mockExpressionAttributeValues,
-          // });
-        // });
-//
-        // it('queries the given index', () => {
-          // TestClass.first({ test: 'foobar' }, 'test-index');
-          // expect(DocumentClient.prototype.query).toHaveBeenCalledWith({
-            // IndexName: 'test-index',
-            // KeyConditionExpression: mockKeyConditionExpression,
-            // ExpressionAttributeNames: mockExpressionAttributeNames,
-            // ExpressionAttributeValues: mockExpressionAttributeValues,
-          // });
-        // });
-      // });
-    // });
-//
-    // describe('get', () => {
-      // it('resolves with instances of the model from the returned data', (done) => {
-        // const Item = { id: 123, date: 111, foobar: 'foo' };
-        // DocumentClient.prototype.get.mockResolvedValue({ Item });
-        // expect.assertions(2);
-        // TestClass.get(jest.fn()).then((item) => {
-          // expect(item).toBeInstanceOf(TestClass);
-          // expect(item).toEqual(expect.objectContaining(Item));
-          // done();
-        // });
-      // });
-//
-      // it('resolves with null if the item is not found', (done) => {
-        // DocumentClient.prototype.get.mockResolvedValue({});
-        // expect.assertions(1);
-        // TestClass.get(jest.fn()).then((item) => {
-          // expect(item).toBeNull();
-          // done();
-        // });
-      // });
-//
-      // it('rejects with the document client error', (done) => {
-        // expect.assertions(1);
-        // const error = jest.fn();
-        // DocumentClient.prototype.get.mockRejectedValue(error);
-        // TestClass.get(jest.fn()).catch((e) => {
-          // expect(e).toBe(error);
-          // done();
-        // });
-      // });
-//
-      // it('executes the correct query', () => {
-        // DocumentClient.prototype.get.mockResolvedValue(jest.fn());
-        // TestClass.get({ id: 123 });
-        // expect(DocumentClient.prototype.get).toHaveBeenCalledWith({
-          // Key: { id: 123 },
-        // });
-      // });
-    // });
-//
-    // describe('delete', () => {
-      // it('resolves with null if the delete request is successful', (done) => {
-        // DocumentClient.prototype.delete.mockResolvedValue(jest.fn());
-        // expect.assertions(1);
-        // TestClass.delete(jest.fn()).then((result) => {
-          // expect(result).toBeNull();
-          // done();
-        // });
-      // });
-//
-      // it('rejects with the error if the delete errors', (done) => {
-        // const error = jest.fn();
-        // DocumentClient.prototype.delete.mockRejectedValue(error);
-        // expect.assertions(1);
-        // TestClass.delete(jest.fn()).catch((e) => {
-          // expect(e).toBe(error);
-          // done();
-        // });
-      // });
-//
-      // it('invokes the delete operation with the correct parameters', () => {
-        // DocumentClient.prototype.delete.mockResolvedValue(jest.fn());
-        // TestClass.delete({ id: 123 });
-        // expect(DocumentClient.prototype.delete).toHaveBeenCalledWith({
-          // Key: { id: 123 },
-        // });
-      // });
-    // });
-// });

@@ -18,24 +18,22 @@
     "postversion": "git push && git push --tags",
     "pretest": "docker-compose up -d",
     "test": "jest",
-    "posttest": "docker stop $(docker ps -aqf \"name=jedlik_localstack\")"
+    "posttest": "docker stop $(docker ps -aqf \"name=jedlik\")"
   },
   "pre-commit": [
     "lint",
     "test"
   ],
   "dependencies": {
-    "aws-sdk": "^2.315.0",
-    "moment": "^2.24.0"
+    "@types/node": "^13.11.0",
+    "aws-sdk": "^2.315.0"
   },
   "peerDependencies": {
     "aws-sdk": "^2.315.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.16",
-    "@types/node": "^12.6.9",
     "jest": "^24.0.2",
-    "pre-commit": "^1.2.2",
     "ts-jest": "^24.0.2",
     "tslint": "^5.18.0",
     "tslint-config-airbnb-base": "^0.3.0",
@@ -45,8 +43,6 @@
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
     },
-    "testEnvironment": "node",
-    "globalSetup": "<rootDir>/__jest__/setup.js",
-    "globalTeardown": "<rootDir>/__jest__/teardown.js"
+    "testEnvironment": "node"
   }
 }

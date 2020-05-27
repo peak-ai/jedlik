@@ -7,7 +7,16 @@ export type DocumentClientOptions = (
   & DynamoDB.ClientApiVersions
 );
 
-class DocumentClient {
+export type Key = DynamoDB.DocumentClient.Key;
+export type IndexName = DynamoDB.DocumentClient.IndexName;
+export type QueryInput = DynamoDB.DocumentClient.QueryInput;
+export type ScanInput = DynamoDB.DocumentClient.ScanInput;
+export type UpdateItemInput = DynamoDB.DocumentClient.UpdateItemInput;
+export type ExpressionAttributeNameMap = DynamoDB.DocumentClient.ExpressionAttributeNameMap;
+export type ExpressionAttributeValueMap = DynamoDB.DocumentClient.ExpressionAttributeValueMap;
+export type KeyConditions = DynamoDB.DocumentClient.KeyConditions;
+
+export class DocumentClient {
   private documentClient: DynamoDB.DocumentClient;
 
   constructor(params?: DocumentClientOptions) {
@@ -58,5 +67,3 @@ class DocumentClient {
     return this.documentClient.update(params).promise();
   }
 }
-
-export default DocumentClient;

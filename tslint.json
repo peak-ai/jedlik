@@ -1,12 +1,9 @@
 {
   "extends": [
-    "tslint:recommended",
     "tslint-config-airbnb-base"
   ],
   "rules": {
-    "arrow-parens": false,
-    "max-line-length": false,
-    "no-magic-numbers": false,
-    "no-use-before-declare": false
+    "no-use-before-declare": false,
+    "no-magic-numbers": false
   }
 }
