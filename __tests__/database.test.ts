@@ -58,6 +58,8 @@ let database: Database<User>;
 const dynamoConfig = {
   endpoint: new Endpoint('http://localhost:8000').href,
   region: 'local',
+  accessKeyId: 'xxx',
+  secretAccessKey: 'xxx',
 };
 
 const dynamo = new DynamoDB(dynamoConfig);
