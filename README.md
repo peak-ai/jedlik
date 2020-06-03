@@ -2,10 +2,9 @@
 
 ![Jedinak](assets/jedinak.jpg)
 
-Jedlik is an extensible DynamoDB ODM for Node.
+Jedlik is an extensible DynamoDB ODM for Node, written in TypeScript.
 
-Jedlik allows you to create plain JavaScript classes to represent entities in your domain.
-Extending these classes from Jedlik's `Model` class enhances the class by introducing behaviour to allow it to interact with DynamoDB in a simple way.
+Jedlik allows you to utilize the power of JavaScript classes to create models of entities in your domain, while introducing behaviour that allows you to interact with DynamoDB in a simple way.
 
 ## Install
 
@@ -18,172 +17,116 @@ Unstable releases are published as `develop` - e.g. `yarn add @peak-ai/jedlik@de
 
 ## Usage
 
-```js
-const jedlik = require('@peak-ai/jedlik');
+```ts
+import * as jedlik from '@peak-ai/jedlik';
 
-const Model = jedlik.Model({
-  // the name of the DynamoDB table the model should write to
-  // it is assumed this table exists
-  table: 'users',
-  schema: {
-    id: { required: true },
-    name: { required: false, default: 'John' },
-  },
-});
-
-class User extends Model {
-  constructor({ id, name }) {
-    this.id = id;
-    this.name = name;
-  }
-
-  sayHello() {
-    console.log(this.name);
-  }
+interface UserProps {
+  id: number;
+  name: string;
+  type: 'admin' | 'user';
 }
 
-const user = new User({ id: 1, name: 'Fred' });
+// the name of the DynamoDB table the model should write to
+// it is assumed this table exists
+const Users = new jedlik.Model<UserProps>({ table: 'users' });
 
-user.save()
-  .then(() => User.get({ id: 1 })) // query on the table's key schema
-  .then((u) => {
-    console.log(u);
-    /*
-    User {
-      id: 1,
-      name: 'Fred'
-    }
-    */
+const user = Users.create({ id: 1, name: 'Fred' }); // create a new document locally
 
-    // u is an instance of the User class, with associated methods
-    u.sayHello();
-    // console.log's 'Fred'
+await user.save(); // write the data to the database
 
-    // u also has the methods from Jedlik's Model class
-    console.log(u.toObject());
-    /*
-    Object {
-      id: 1,
-      name: 'Fred'
-    }
-    */
-  });
+user.set({ name: 'Ronak' }); // update an attribute locally
+
+console.log(user.get('name')) // get an attribute
+
+Users.on('save', (u) => {
+  console.log(u.toObject()); // get the attributes as a plain object
+});
+
+await user.save(); // write the changes to the database
+
+const user2 = await Users.get({ id: 2 }); // query the database
+
+console.log(user2.toObject());
+
+// advanced filtering
+const admins = await Users.scan({
+  filters: { key: 'type', operator: '=', value: 'admin' },
+});
 ```
 
 ## API
 
-### `jedlik.Model({ table, schema, timestamps = false, dynamoConfig = {}}) => Model`
+### `class Model<T>`
 
-#### table (String - required)
+#### `constructor(options: ModelOptions, config?: DatabaseOptions): Model<T>`
+
+Constructor function that creates a new `Model`.
+
+##### options.table (String - required)
 
 Name of the DynamoDB table to interact with
 
-#### schema (Object - required)
+##### `config`
 
-Schema describing the shape of the item. Should be an object with the following shape:
+Optional config that is passed directly to the underlying [`AWS.DynamoDB` service constructor from the AWS SDK.](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#constructor-property)
 
-```js
-const schema = {
-  propertyName: {
-    required: Boolean, // if true, `document.save` or `Model.create` will throw a ValidationError if the key is missing
-    default: 'any value', // Value to set on non-required fields that are undefined on the document. Should be present if the field is not required. Else will default to null.
-  },
-};
-```
+#### `Model.create(item: T): Document<T>`
 
-#### `timestamps (Bool|Function) (default = false)`
+Returns a new `Document` using the attributes of the given item.
 
-If true, saving will add a createdAt (on first save) or updatedAt timestamp.
+#### `Model.query(key: Key<T>, options?: QueryOptions<T>): Promise<Document<T>[]>`
 
-By default this will be milliseconds since unix epoch (using `moment.utc.valueOf()`).
-
-Optionally, you can pass in your own function to generate a timestamp.
-
-#### `dynamoConfig (Object) (default = {})`
-
-Optional config to pass to the underlying [`AWS.DynamoDB` service constructor from the AWS SDK.](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#constructor-property)
-
-### `Model - Class`
-
-#### Properties
-
-#### `db`
-
-The underlying `AWS.DynamoDB.DocumentClient` service, exposed for performing custom queries etc.
-
-All methods are promisified, so you can just do `thing.db.query(params).then(...)`, rather than passing a callback, or using the `.promise` method.
-
-#### static `db`
-
-The underlying `AWS.DynamoDB.DocumentClient` service, exposed for performing custom queries etc.
-
-All methods are promisified, so you can just do `thing.db.query(params).then(...)`, rather than passing a callback, or using the `.promise` method.
-
-#### static `table`
-
-The name of the table, passed in during the module initialization.
-
-#### Methods
-
-#### static `create(item)`
-
-Writes the given item to the database and returns a new instance of the model.
-Shorthand for creating a new instance and saving it:
-
-```js
-Thing.create(item);
-
-// is the same as
-
-const thing = new Thing(item);
-thing.save();
-```
-
-#### static `query(key, [index = null], [filters = null])`
-
-Resolves with an array of items which match the given key parameters. Take an optional index parameter to query against a secondary index. A third `filters` parameter can be provided to apply a filter expression to the underlying query:
-
-```js
-await Segment.query(
-  { tenant: 'my-tenant' },
-  'my-index',
-  {
-    aiDriven: true, // direct value, defaulting to the '=' operator
-    createdAt: { // filter object, allowing different operators to be specified
-      operator: '>',
-      value: Date.now() - 86400 * 1000,
-    },
-  },
-);
-```
-
+Resolves with an array of items which match the given key. Takes an optional index parameter to query against a secondary index.
 Returned items are instances of the model.
 
-#### static `first(key, [index = null], [filters = null])`
+#### `Model.first(key: Key<T>, options? FirstOptions<T>): Promise<Document<T>>`
 
 Convenience method which returns the first item found by the `Model.query` method, or null if no items are found.
 
-#### static `get(key)`
+#### `Model.get(key: Key<T>) : Promise<Document<T>>`
 
 Resolves with the item that matches the given key parameter.
-The returned item is an instance of the model.
-Returns `null` if the item is not found.
 
 **N.B.** The key must be the full primary key defined in the table schema. If the table has a composite key, both the partition key and sort key must be provided. You cannot search on a secondary index. If you need to do one of these, use `Model.query` or `Model.first` instead.
 
-#### static `delete(key)`
+#### `Model.delete(key: Key<T>): Promise<void>`
 
 Deletes the item that matches the given key parameter.
-Resolves as `null`.
 
-#### `save(key, [index = null])`
+#### `Model.on(eventName: EventName, callback: (document?: Document<T>) => void): void`
 
-Saves the instance of the model to DynamoDB, either overwriting the existing item with the given primary key, or creating a new one.
-Resolves with the instance.
+Registers an event handler to be fired after successful events. Valid event names are `delete` and `save`.
 
-#### `toObject()`
+### `class Document<T>`
 
-Returns a plain JavaScript object representation of the document according to the schema (with all internals/methods etc removed).
+A `Document` represents a single item in your DynamoDB table.
+
+#### `Document.get(key: keyof T): T[K]`
+
+Returns the value of an attribute on the document.
+
+#### `Document.set(props: Partial<T>): void`
+
+Sets the value of an attribute on the document.
+
+#### `Document.save(): Promise<void>`
+
+Saves the Documents attributes to DynamoDB, either overwriting the existing item with the given primary key, or creating a new one.
+
+#### `Document.toObject(): T`
+
+Returns a plain JavaScript object representation of the documents attributes.
+
+## Roadmap
+
+Some features that I'd still like to add
+
+- Support for more complicated filter types - [the full list is here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html)
+- Add schemas to provide things like default values, required fields, and validation - original Jedlik had something like this
+- Ability to add methods to Documents and Models
+- Ability to add "virtual properties" to documents - like getters
+- Timestamps
+- Key validation. For example - You should only be able to pass key properties into `Model.get`. And you shouldn't really be able to update the key properties on a document - if you change the value of a key property of an existing document, a new document will be created. We should make this better, even if it's just by adding better type checking. Currently when you need to give a key, it just uses `Partial<T>` as the type.
 
 ## Development
 
@@ -192,13 +135,15 @@ Returns a plain JavaScript object representation of the document according to th
 - `git clone git@github.com:PeakBI/jedlik.git`
 - `yarn`
 
+### Build
+
+- `yarn build` compiles the TypeScript code into a `dist` directory.
+
 ### Test
 
-- `yarn test` will run unit tests using Jest
+- `yarn test` will run unit and integration tests using Jest. Integration tests run against a Dockerized DynamoDB Local. You'll need the Docker daemon running for this.
 
 ### Publish
 
-- Use `yarn publish` to publish the package to the npm registry.
-- When developing, if you need to test a change on another project you have two options:
-- - **Preferred** - in the `package.json` of the other project, set the Jedlik version to `file:/absolute/path/to/jedlik/project`.
-- - Publish the package to npm with the `develop` tag - `yarn publish --tag develop`. You can then install the unstable version using `yarn add @peak-ai/jedlik@develop` without having to increase the version number. This is good for using the unstable version on the deployed dev environment.
+- Use `yarn version` to increase the package version. Before increasing the version, tests and lint checks will be run. This will add a new git tag - [See here for more info](https://yarnpkg.com/lang/en/docs/cli/version/#toc-git-tags). There is also a `postversion` script that will push the new version and tags to GitHub.
+- Use `yarn publish` to publish the package to the npm registry. Before publishing, tests and lint checks will be run, and the `build` script will be run automatically.

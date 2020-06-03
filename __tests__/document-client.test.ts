@@ -1,29 +1,32 @@
-const AWS = require('aws-sdk');
-const DocumentClient = require('../src/document-client');
+import { DynamoDB } from 'aws-sdk';
+import { DocumentClient } from '../src/document-client';
 
 jest.mock('aws-sdk');
 
+const awsDocumentClient = (DynamoDB.DocumentClient as jest.Mock<DynamoDB.DocumentClient>);
+
 const data = jest.fn();
 const error = jest.fn();
-const params = jest.fn();
 const awsPromise = jest.fn();
 
 const documentClient = new DocumentClient();
 
 beforeEach(() => {
-  AWS.DynamoDB.DocumentClient.mockClear();
+  awsDocumentClient.mockClear();
   jest.resetAllMocks();
 });
 
-describe('constructor', () => {
-  it('is an instance of AWS.DynamoDB.DocumentClient', () => {
-    expect(documentClient).toBeInstanceOf(AWS.DynamoDB.DocumentClient);
-  });
-});
-
 describe('batchGet', () => {
+  const params: DynamoDB.DocumentClient.BatchGetItemInput = {
+    RequestItems: {
+      Table: {
+        Keys: [{ id: 1 }],
+      },
+    },
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.batchGet.mockReturnValue({
+    awsDocumentClient.prototype.batchGet.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -31,25 +34,35 @@ describe('batchGet', () => {
   it('calls the AWS DocumentClient batchGet', () => {
     expect.assertions(1);
     documentClient.batchGet(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.batchGet).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.batchGet).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if batchGet operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.batchGet(jest.fn())).resolves.toBe(data);
+    expect(documentClient.batchGet(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if batchGet operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.batchGet(jest.fn())).rejects.toBe(error);
+    expect(documentClient.batchGet(params)).rejects.toBe(error);
   });
 });
 
 describe('batchWrite', () => {
+  const params: DynamoDB.DocumentClient.BatchWriteItemInput = {
+    RequestItems: {
+      Table: [{
+        DeleteRequest: {
+          Key: { id: 1 },
+        },
+      }],
+    },
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.batchWrite.mockReturnValue({
+    awsDocumentClient.prototype.batchWrite.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -57,51 +70,48 @@ describe('batchWrite', () => {
   it('calls the AWS DocumentClient batchWrite', () => {
     expect.assertions(1);
     documentClient.batchWrite(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.batchWrite).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.batchWrite).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if batchWrite operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.batchWrite(jest.fn())).resolves.toBe(data);
+    expect(documentClient.batchWrite(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if batchWrite operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.batchWrite(jest.fn())).rejects.toBe(error);
+    expect(documentClient.batchWrite(params)).rejects.toBe(error);
   });
 });
 
 describe('createSet', () => {
-  beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.createSet.mockReturnValue({
-      promise: awsPromise,
-    });
-  });
+  const params = [1, 2, 3];
 
   it('calls the AWS DocumentClient createSet', () => {
     expect.assertions(1);
     documentClient.createSet(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.createSet).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.createSet).toHaveBeenCalledWith(params);
   });
 
-  it('resolves with the data if createSet operation is successful', () => {
-    awsPromise.mockResolvedValue(data);
+  it('returns the result of AWS DocumentClient createSet', () => {
     expect.assertions(1);
-    expect(documentClient.createSet(jest.fn())).resolves.toBe(data);
-  });
-
-  it('rejects with the error if createSet operation errors', () => {
-    expect.assertions(1);
-    awsPromise.mockRejectedValue(error);
-    expect(documentClient.createSet(jest.fn())).rejects.toBe(error);
+    const expected = jest.fn();
+    awsDocumentClient.prototype.createSet.mockReturnValue(expected);
+    const result = documentClient.createSet(params);
+    expect(result).toBe(expected);
   });
 });
 
 describe('delete', () => {
+  const params: AWS.DynamoDB.DocumentClient.DeleteItemInput = {
+    Key: { id: 1 },
+    TableName: 'table',
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.delete.mockReturnValue({
+    awsDocumentClient.prototype.delete.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -109,25 +119,30 @@ describe('delete', () => {
   it('calls the AWS DocumentClient delete', () => {
     expect.assertions(1);
     documentClient.delete(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.delete).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.delete).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if delete operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.delete(jest.fn())).resolves.toBe(data);
+    expect(documentClient.delete(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if delete operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.delete(jest.fn())).rejects.toBe(error);
+    expect(documentClient.delete(params)).rejects.toBe(error);
   });
 });
 
 describe('get', () => {
+  const params: DynamoDB.DocumentClient.GetItemInput = {
+    Key: { id: 1 },
+    TableName: 'table',
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.get.mockReturnValue({
+    awsDocumentClient.prototype.get.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -135,25 +150,30 @@ describe('get', () => {
   it('calls the AWS DocumentClient get', () => {
     expect.assertions(1);
     documentClient.get(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.get).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.get).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if get operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.get(jest.fn())).resolves.toBe(data);
+    expect(documentClient.get(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if get operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.get(jest.fn())).rejects.toBe(error);
+    expect(documentClient.get(params)).rejects.toBe(error);
   });
 });
 
 describe('put', () => {
+  const params: DynamoDB.DocumentClient.PutItemInput = {
+    Item: { id: 1 },
+    TableName: 'table',
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.put.mockReturnValue({
+    awsDocumentClient.prototype.put.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -161,25 +181,29 @@ describe('put', () => {
   it('calls the AWS DocumentClient put', () => {
     expect.assertions(1);
     documentClient.put(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.put).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.put).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if put operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.put(jest.fn())).resolves.toBe(data);
+    expect(documentClient.put(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if put operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.put(jest.fn())).rejects.toBe(error);
+    expect(documentClient.put(params)).rejects.toBe(error);
   });
 });
 
 describe('query', () => {
+  const params: DynamoDB.DocumentClient.QueryInput = {
+    TableName: 'table',
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.query.mockReturnValue({
+    awsDocumentClient.prototype.query.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -187,25 +211,29 @@ describe('query', () => {
   it('calls the AWS DocumentClient query', () => {
     expect.assertions(1);
     documentClient.query(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.query).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.query).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if query operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.query(jest.fn())).resolves.toBe(data);
+    expect(documentClient.query(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if query operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.query(jest.fn())).rejects.toBe(error);
+    expect(documentClient.query(params)).rejects.toBe(error);
   });
 });
 
 describe('scan', () => {
+  const params: DynamoDB.DocumentClient.ScanInput = {
+    TableName: 'table',
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.scan.mockReturnValue({
+    awsDocumentClient.prototype.scan.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -213,25 +241,34 @@ describe('scan', () => {
   it('calls the AWS DocumentClient scan', () => {
     expect.assertions(1);
     documentClient.scan(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.scan).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.scan).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if scan operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.scan(jest.fn())).resolves.toBe(data);
+    expect(documentClient.scan(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if scan operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.scan(jest.fn())).rejects.toBe(error);
+    expect(documentClient.scan(params)).rejects.toBe(error);
   });
 });
 
 describe('transactGet', () => {
+  const params: DynamoDB.DocumentClient.TransactGetItemsInput = {
+    TransactItems: [{
+      Get: {
+        Key: { id: 1 },
+        TableName: 'table',
+      },
+    }],
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.transactGet.mockReturnValue({
+    awsDocumentClient.prototype.transactGet.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -239,25 +276,34 @@ describe('transactGet', () => {
   it('calls the AWS DocumentClient transactGet', () => {
     expect.assertions(1);
     documentClient.transactGet(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.transactGet).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.transactGet).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if transactGet operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.transactGet(jest.fn())).resolves.toBe(data);
+    expect(documentClient.transactGet(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if transactGet operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.transactGet(jest.fn())).rejects.toBe(error);
+    expect(documentClient.transactGet(params)).rejects.toBe(error);
   });
 });
 
 describe('transactWrite', () => {
+  const params: DynamoDB.DocumentClient.TransactWriteItemsInput = {
+    TransactItems: [{
+      Delete: {
+        Key: { id: 1 },
+        TableName: 'table',
+      },
+    }],
+  };
+
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.transactWrite.mockReturnValue({
+    awsDocumentClient.prototype.transactWrite.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -265,25 +311,29 @@ describe('transactWrite', () => {
   it('calls the AWS DocumentClient transactWrite', () => {
     expect.assertions(1);
     documentClient.transactWrite(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.transactWrite).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.transactWrite).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if transactWrite operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.transactWrite(jest.fn())).resolves.toBe(data);
+    expect(documentClient.transactWrite(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if transactWrite operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.transactWrite(jest.fn())).rejects.toBe(error);
+    expect(documentClient.transactWrite(params)).rejects.toBe(error);
   });
 });
 
 describe('update', () => {
+  const params: DynamoDB.DocumentClient.UpdateItemInput = {
+    Key: { id: 1 },
+    TableName: 'table',
+  };
   beforeEach(() => {
-    AWS.DynamoDB.DocumentClient.prototype.update.mockReturnValue({
+    awsDocumentClient.prototype.update.mockReturnValue({
       promise: awsPromise,
     });
   });
@@ -291,18 +341,18 @@ describe('update', () => {
   it('calls the AWS DocumentClient update', () => {
     expect.assertions(1);
     documentClient.update(params);
-    expect(AWS.DynamoDB.DocumentClient.prototype.update).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.update).toHaveBeenCalledWith(params);
   });
 
   it('resolves with the data if update operation is successful', () => {
     awsPromise.mockResolvedValue(data);
     expect.assertions(1);
-    expect(documentClient.update(jest.fn())).resolves.toBe(data);
+    expect(documentClient.update(params)).resolves.toBe(data);
   });
 
   it('rejects with the error if update operation errors', () => {
     expect.assertions(1);
     awsPromise.mockRejectedValue(error);
-    expect(documentClient.update(jest.fn())).rejects.toBe(error);
+    expect(documentClient.update(params)).rejects.toBe(error);
   });
 });

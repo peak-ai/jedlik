@@ -1,0 +1,9 @@
+{
+  "extends": [
+    "tslint-config-airbnb-base"
+  ],
+  "rules": {
+    "no-use-before-declare": false,
+    "no-magic-numbers": false
+  }
+}
