@@ -10,8 +10,6 @@ jest.mock('../src/events');
 
 /* tslint:disable:variable-name */
 const MockAttributes = mocked(Attributes);
-// const MockDatabase = mocked(Database);
-// const MockEvents = mocked(Events);
 /* tslint:enable:variable-name */
 
 let subject: Document<any>;

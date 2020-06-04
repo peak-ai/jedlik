@@ -77,7 +77,7 @@ Name of the DynamoDB table to interact with
 
 - `schema.validate(item: T): { value: T, error: { name: string, details: { message: string }[] } }`
 
-A function that validates the values in a Document and aplpies any defaults. This is designed to be used with [Joi](https://hapi.dev/module/joi/).
+A function that validates the values in a Document and applies any defaults. This is designed to be used with [Joi](https://hapi.dev/module/joi/).
 
 ##### `config`
 
