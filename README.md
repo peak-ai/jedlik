@@ -135,7 +135,6 @@ Returns a plain JavaScript object representation of the documents attributes.
 Some features that I'd still like to add
 
 - Support for more complicated filter types - [the full list is here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html)
-- Add schemas to provide things like default values, required fields, and validation - original Jedlik had something like this
 - Ability to add methods to Documents and Models
 - Ability to add "virtual properties" to documents - like getters
 - Timestamps
