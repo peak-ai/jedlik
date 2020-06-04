@@ -19,6 +19,7 @@ Unstable releases are published as `develop` - e.g. `yarn add @peak-ai/jedlik@de
 
 ```ts
 import * as jedlik from '@peak-ai/jedlik';
+import * as Joi from '@hapi/joi';
 
 interface UserProps {
   id: number;
@@ -26,9 +27,15 @@ interface UserProps {
   type: 'admin' | 'user';
 }
 
+const schema = Joi.object({
+  id: Joi.string().required(),
+  name: Joi.string().required(),
+  type: Joi.string().allow('admin', 'user').required(),
+});
+
 // the name of the DynamoDB table the model should write to
 // it is assumed this table exists
-const Users = new jedlik.Model<UserProps>({ table: 'users' });
+const Users = new jedlik.Model<UserProps>({ table: 'users', schema });
 
 const user = Users.create({ id: 1, name: 'Fred' }); // create a new document locally
 
@@ -65,6 +72,12 @@ Constructor function that creates a new `Model`.
 ##### options.table (String - required)
 
 Name of the DynamoDB table to interact with
+
+##### options.schema (Schema<T> - required)
+
+- `schema.validate(item: T): { value: T, error: { name: string, details: { message: string }[] } }`
+
+A function that validates the values in a Document and aplpies any defaults. This is designed to be used with [Joi](https://hapi.dev/module/joi/).
 
 ##### `config`
 

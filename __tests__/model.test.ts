@@ -23,25 +23,26 @@ const getMockObjects = () => {
 };
 
 beforeEach(() => {
-  MockDatabase.mockClear();
-  Mockument.mockClear();
-  MockEvents.mockClear();
+  jest.clearAllMocks();
 });
 
 let mockDatabase: Database<any>;
 let mockEvents: Events<any>;
 const config = {};
 const tableName = 'users';
+const schema = {
+  validate: jest.fn(),
+};
 
 describe('constructor', () => {
   it('passes the parameters into the database constructor', () => {
-    const model = new Model<any>({ table: tableName }, config);
+    const model = new Model<any>({ table: tableName, schema }, config);
     expect.assertions(1);
     expect(MockDatabase).toHaveBeenCalledWith(tableName, config);
   });
 
   it('creates a new event handler', () => {
-    const model = new Model<any>({ table: tableName }, config);
+    const model = new Model<any>({ table: tableName, schema }, config);
     expect.assertions(1);
     expect(MockEvents).toHaveBeenCalled();
   });
@@ -55,7 +56,7 @@ describe('methods', () => {
     MockDatabase.mockImplementationOnce(() => mockDatabase);
     mockEvents = new Events();
     MockEvents.mockImplementationOnce(() => mockEvents);
-    model = new Model<any>({ table: tableName }, config);
+    model = new Model<any>({ table: tableName, schema }, config);
   });
 
   describe('create', () => {
@@ -65,7 +66,7 @@ describe('methods', () => {
       const props = jest.fn();
       const result = model.create(props);
 
-      expect(Mockument).toHaveBeenCalledWith(mockDatabase, mockEvents, props);
+      expect(Mockument).toHaveBeenCalledWith(mockDatabase, mockEvents, schema, props);
       expect(result).toBeInstanceOf(Document);
     });
   });
@@ -94,7 +95,7 @@ describe('methods', () => {
       expect(Mockument).toHaveBeenCalledTimes(items.length);
 
       items.forEach((item, i) => {
-        expect(Mockument).toHaveBeenNthCalledWith(i + 1, mockDatabase, mockEvents, item);
+        expect(Mockument).toHaveBeenNthCalledWith(i + 1, mockDatabase, mockEvents, schema, item);
       });
     });
 
@@ -139,7 +140,7 @@ describe('methods', () => {
       expect(Mockument).toHaveBeenCalledTimes(items.length);
 
       items.forEach((item, i) => {
-        expect(Mockument).toHaveBeenNthCalledWith(i + 1, mockDatabase, mockEvents, item);
+        expect(Mockument).toHaveBeenNthCalledWith(i + 1, mockDatabase, mockEvents, schema, item);
       });
     });
 
@@ -183,7 +184,7 @@ describe('methods', () => {
       await model.first({}, {});
 
       expect(Mockument).toHaveBeenCalledTimes(1);
-      expect(Mockument).toHaveBeenNthCalledWith(1, mockDatabase, mockEvents, item);
+      expect(Mockument).toHaveBeenNthCalledWith(1, mockDatabase, mockEvents, schema, item);
     });
 
     it('returns a document', async () => {
@@ -219,7 +220,7 @@ describe('methods', () => {
       await model.get({});
 
       expect(Mockument).toHaveBeenCalledTimes(1);
-      expect(Mockument).toHaveBeenNthCalledWith(1, mockDatabase, mockEvents, item);
+      expect(Mockument).toHaveBeenNthCalledWith(1, mockDatabase, mockEvents, schema, item);
     });
 
     it('returns a document', async () => {
