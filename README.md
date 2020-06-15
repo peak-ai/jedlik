@@ -1,7 +1,5 @@
 # Jedlik
 
-![Jedinak](assets/jedinak.jpg)
-
 Jedlik is an extensible DynamoDB ODM for Node, written in TypeScript.
 
 Jedlik allows you to utilize the power of JavaScript classes to create models of entities in your domain, while introducing behaviour that allows you to interact with DynamoDB in a simple way.
