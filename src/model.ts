@@ -5,19 +5,22 @@ import {
   QueryOptions,
   ScanOptions,
 } from './database';
-import { Document } from './document';
+import { Document, Schema } from './document';
 import { Events, EventName, EventCallback } from './events';
 
-interface ModelOptions {
+interface ModelOptions<T> {
   table: string;
+  schema: Schema<T>
 }
 
 export class Model<T> {
   private db: Database<T>;
   private events: Events<Document<T>> = new Events();
+  private schema: Schema<T>;
 
-  constructor(options: ModelOptions, config?: DatabaseOptions) {
+  constructor(options: ModelOptions<T>, config?: DatabaseOptions) {
     this.db = new Database(options.table, config);
+    this.schema = options.schema;
   }
 
   public create(props: T): Document<T> {
@@ -58,6 +61,6 @@ export class Model<T> {
   }
 
   private createDocument(item: T): Document<T> {
-    return new Document(this.db, this.events, item);
+    return new Document(this.db, this.events, this.schema, item);
   }
 }
