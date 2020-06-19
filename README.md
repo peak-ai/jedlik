@@ -11,8 +11,6 @@ Yarn:
 NPM:
 `npm i -S @peak-ai/jedlik`
 
-Unstable releases are published as `develop` - e.g. `yarn add @peak-ai/jedlik@develop`
-
 ## Usage
 
 ```ts
@@ -206,7 +204,18 @@ Some features that I'd still like to add
 
 - `yarn test` will run unit and integration tests using Jest. Integration tests run against a Dockerized DynamoDB Local. You'll need the Docker daemon running for this.
 
+### Contributing
+
+- Branch off `develop` please. PR's will get merged to `develop`. Releases will go from `develop` to `master`
+
 ### Publish
 
-- Use `yarn version` to increase the package version. Before increasing the version, tests and lint checks will be run. This will add a new git tag - [See here for more info](https://yarnpkg.com/lang/en/docs/cli/version/#toc-git-tags). There is also a `postversion` script that will push the new version and tags to GitHub.
-- Use `yarn publish` to publish the package to the npm registry. Before publishing, tests and lint checks will be run, and the `build` script will be run automatically.
+- Run the tests and linter on the `develop` branch
+- Switch to `master` and merge in `develop`
+- Use `yarn version` to increase the package version and release the new version. This will do the following things:
+  - Run the tests and linter
+  - Increase the version
+  - Add a new git tag for the version
+  - push the new tag to GitHub
+  - publish the package to npm
+  - push the released code to GitHub `master`
