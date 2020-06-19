@@ -101,14 +101,16 @@ describe('methods', () => {
     });
 
     it('puts the attributes to the database', async () => {
-      expect.assertions(1);
+      expect.assertions(2);
       const attributes = jest.fn();
+      const options = {};
 
       schema.validate.mockReturnValueOnce({ value: attributes });
 
-      await subject.save();
+      await subject.save(options);
 
-      expect(db.put).toHaveBeenCalledWith(attributes);
+      expect((db.put as jest.Mock).mock.calls[0][0]).toBe(attributes);
+      expect((db.put as jest.Mock).mock.calls[0][1]).toBe(options);
     });
 
     it('emits a save event with the document', async () => {
