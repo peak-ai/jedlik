@@ -87,22 +87,42 @@ Returns a new `Document` using the attributes of the given item.
 
 #### `Model.query(key: Key<T>, options?: QueryOptions<T>): Promise<Document<T>[]>`
 
-Resolves with an array of items which match the given key. Takes an optional index parameter to query against a secondary index.
-Returned items are instances of the model.
+Recursively queries the table and resolves with an array of documents which match the given key. Takes an optional options object.
+
+- `options.filters?: ConditionMap<T>` - filters to apply to the query
+- `options.index?: IndexName;` - the name of the index to query
+- `options.limit?: number;` - limit the number of documents returned
+- `options.sort?: 'asc' | 'desc';` - sort direction of the results (N.B. this uses DynamoDB's ScanIndexForward to sort)
+
+Returned items are type `Document<T>`.
 
 #### `Model.first(key: Key<T>, options? FirstOptions<T>): Promise<Document<T>>`
 
-Convenience method which returns the first item found by the `Model.query` method, or null if no items are found.
+Convenience method which returns the first document found by the `Model.query` method. Throws an error if no items are found.
+
+- `options.filters?: ConditionMap<T>` - filters to apply to the query
+- `options.index?: IndexName;` - the name of the index to query
+- `options.sort?: 'asc' | 'desc';` - sort direction of the results (N.B. this uses DynamoDB's ScanIndexForward to sort)
+
+#### `Model.scan(options? ScanOptions<T>): Promise<Document<T>>`
+
+Performs a scan of the entire table (recursively) and returns all the found documents.
+
+- `options.filters?: ConditionMap<T>` - filters to apply to the scan
+- `options.index?: IndexName;` - the name of the index to scan
+- `options.limit?: number;` - limit the number of documents returned
 
 #### `Model.get(key: Key<T>) : Promise<Document<T>>`
 
-Resolves with the item that matches the given key parameter.
+Resolves with the document that matches the given key parameter. Throws an error if no document exists.
 
 **N.B.** The key must be the full primary key defined in the table schema. If the table has a composite key, both the partition key and sort key must be provided. You cannot search on a secondary index. If you need to do one of these, use `Model.query` or `Model.first` instead.
 
-#### `Model.delete(key: Key<T>): Promise<void>`
+#### `Model.delete(key: Key<T>, options? DeleteOptions<T>): Promise<void>`
 
-Deletes the item that matches the given key parameter.
+Deletes the document that matches the given key parameter.
+
+- `options.conditions?: ConditionMap<T>` - conditions to apply to the deletion - if the condition evaluates to false, then the delete will fail
 
 #### `Model.on(eventName: EventName, callback: (document?: Document<T>) => void): void`
 
@@ -120,18 +140,51 @@ Returns the value of an attribute on the document.
 
 Sets the value of an attribute on the document.
 
-#### `Document.save(): Promise<void>`
+#### `Document.save(options? PutOptions<T>): Promise<void>`
 
 Saves the Documents attributes to DynamoDB, either overwriting the existing item with the given primary key, or creating a new one.
+
+- `options.conditions?: ConditionMap<T>` - - conditions to apply to the underlying put request - if the condition evaluates to false, then the request will fail
 
 #### `Document.toObject(): T`
 
 Returns a plain JavaScript object representation of the documents attributes.
 
+### `ConditionMap<T>`
+
+Condition maps give you a nicer way of writing filter and condition expressions without worrying about `ExpressionAttributeNames` and `ExpressionAttributeValues`.
+
+A simple condition would look like this:
+
+```ts
+const condition = { key: 'price', operator: '>', value: 10 };
+```
+
+This says **"*do this thing if the price is greater than 10*"** - you could use it filter results in a query, or to prevent an item from being deleted or overwritten.
+
+You can also get more complex, using logical groups:
+
+```ts
+const complexCondition = {
+  $or: [
+    { key: 'price', operator: '>', value: 10 },
+    {
+      $and: [
+        { key: 'price', operator: '>', value: 5 },
+        { key: 'name', operator: '=', value: 'MyItem' },
+      ],
+    },
+  ],
+};
+```
+
+This says **"*do this thing if either a) the price is greater than 10, or b) the price is greater than 5 and the name is MyItem*"**
+
 ## Roadmap
 
 Some features that I'd still like to add
 
+- Support for update requests - at the minute only `put` is supported as way of writing to the database
 - Support for more complicated filter types - [the full list is here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html)
 - Ability to add methods to Documents and Models
 - Ability to add "virtual properties" to documents - like getters
