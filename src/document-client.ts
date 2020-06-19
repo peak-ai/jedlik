@@ -1,14 +1,14 @@
 import { DynamoDB } from 'aws-sdk';
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service';
 
-export type DocumentClientOptions = (
-  DynamoDB.DocumentClient.DocumentClientOptions
-  & ServiceConfigurationOptions
-  & DynamoDB.ClientApiVersions
-);
+export type DocumentClientOptions = DynamoDB.DocumentClient.DocumentClientOptions &
+  ServiceConfigurationOptions &
+  DynamoDB.ClientApiVersions;
 
 export type Key = DynamoDB.DocumentClient.Key;
 export type IndexName = DynamoDB.DocumentClient.IndexName;
+export type DeleteInput = DynamoDB.DocumentClient.DeleteItemInput;
+export type PutInput = DynamoDB.DocumentClient.PutItemInput;
 export type QueryInput = DynamoDB.DocumentClient.QueryInput;
 export type ScanInput = DynamoDB.DocumentClient.ScanInput;
 export type UpdateItemInput = DynamoDB.DocumentClient.UpdateItemInput;
@@ -31,7 +31,9 @@ export class DocumentClient {
     return this.documentClient.batchWrite(params).promise();
   }
 
-  public createSet(list: number[] | string[] | DynamoDB.DocumentClient.binaryType[]) {
+  public createSet(
+    list: number[] | string[] | DynamoDB.DocumentClient.binaryType[]
+  ) {
     return this.documentClient.createSet(list);
   }
 
@@ -59,7 +61,9 @@ export class DocumentClient {
     return this.documentClient.transactGet(params).promise();
   }
 
-  public transactWrite(params: DynamoDB.DocumentClient.TransactWriteItemsInput) {
+  public transactWrite(
+    params: DynamoDB.DocumentClient.TransactWriteItemsInput
+  ) {
     return this.documentClient.transactWrite(params).promise();
   }
 

@@ -202,7 +202,7 @@ describe('query', () => {
 
     const result = await database.query(
       { type: UserType.User },
-      { filters: { key: 'age', operator: '>', value: 50 } }
+      { filters: { key: 'age', operator: '>', value: 50 } },
     );
     const expected = SORTED_USERS_ASCENDING.filter(user => (
       (user.type === UserType.User) && (user.age > 50)
@@ -272,7 +272,7 @@ describe('first', () => {
 
     const result = await database.first(
       { type: UserType.User },
-      { filters: { key: 'age', operator: '>', value: 50 } }
+      { filters: { key: 'age', operator: '>', value: 50 } },
     );
     const [expected] = SORTED_USERS_ASCENDING.filter(user => (
       (user.type === UserType.User) && (user.age > 50)
@@ -344,6 +344,52 @@ describe('delete', () => {
 
     expect(after.length).toEqual(0);
   });
+
+  it('raises an error if conditions are not met', async () => {
+    expect.assertions(3);
+
+    const [item] = SORTED_USERS_ASCENDING.filter(
+      user => user.type === UserType.Admin,
+    );
+
+    const before = await database.query({ type: item.type, id: item.id });
+
+    expect(before.length).toEqual(1);
+
+    try {
+      await database.delete(
+       { type: item.type, id: item.id },
+        { conditions: { key: 'age', operator: '<>', value: item.age } },
+      );
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+
+    const after = await database.query({ type: item.type, id: item.id });
+
+    expect(after.length).toEqual(1);
+  });
+
+  it('deletes the item if conditions are met', async () => {
+    expect.assertions(2);
+
+    const [, , , item] = SORTED_USERS_ASCENDING.filter(
+      user => user.type === UserType.Admin,
+    );
+
+    const before = await database.query({ type: item.type, id: item.id });
+
+    expect(before.length).toEqual(1);
+
+    await database.delete(
+      { type: item.type, id: item.id },
+      { conditions: { key: 'age', operator: '=', value: item.age } },
+    );
+
+    const after = await database.query({ type: item.type, id: item.id });
+
+    expect(after.length).toEqual(0);
+  });
 });
 
 describe('put', () => {
@@ -382,5 +428,47 @@ describe('put', () => {
     expect(after.length).toEqual(USERS.length);
     expect(after).not.toContainEqual(user);
     expect(after).toContainEqual(updated);
+  });
+
+  it('raises an error if conditions are not met', async () => {
+    expect.assertions(2);
+
+    const [user] = USERS;
+
+    const before = await database.get({ type: user.type, id: user.id });
+
+    const updated = {
+      ...before,
+      age: before.age + 1,
+    };
+
+    try {
+      await database.put(updated, { conditions: { key: 'id', operator: '<>', value: user.id } });
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+
+    const after = await database.get({ type: user.type, id: user.id });
+
+    expect(after).toEqual(before);
+  });
+
+  it('deletes the item if conditions are met', async () => {
+    expect.assertions(1);
+
+    const [user] = USERS;
+
+    const before = await database.get({ type: user.type, id: user.id });
+
+    const updated = {
+      ...before,
+      age: before.age + 1,
+    };
+
+    await database.put(updated, { conditions: { key: 'id', operator: '=', value: user.id } });
+
+    const after = await database.get({ type: user.type, id: user.id });
+
+    expect(after).toEqual(updated);
   });
 });

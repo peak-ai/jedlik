@@ -2,6 +2,8 @@ import {
   DocumentClient,
   DocumentClientOptions,
   IndexName,
+  DeleteInput,
+  PutInput,
   QueryInput,
   ScanInput,
   Key as DocumentClientKey,
@@ -25,6 +27,14 @@ export interface FirstOptions<T> {
   filters?: ConditionExpressions.ConditionMap<T>;
   index?: IndexName;
   sort?: 'asc' | 'desc';
+}
+
+export interface PutOptions<T> {
+  conditions?: ConditionExpressions.ConditionMap<T>;
+}
+
+export interface DeleteOptions<T> {
+  conditions?: ConditionExpressions.ConditionMap<T>;
 }
 
 export type Key<T> = Partial<T>;
@@ -75,21 +85,50 @@ export class Database<T> {
     return Item as T;
   }
 
-  public async delete(key: Key<T>): Promise<void> {
-    await this.documentClient.delete({
+  public async delete(
+    key: Key<T>,
+    options: DeleteOptions<T> = {}
+  ): Promise<void> {
+    const params: DeleteInput = {
       Key: key,
       TableName: this.tableName,
-    });
+    };
+
+    if (options.conditions) {
+      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
+        options.conditions
+      );
+      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
+        options.conditions
+      );
+      params.ConditionExpression = ConditionExpressions.getConditionExpression(
+        options.conditions
+      );
+    }
+
+    await this.documentClient.delete(params);
   }
 
-  public async put(item: T): Promise<void> {
-    await this.documentClient.put({
+  public async put(item: T, options: PutOptions<T> = {}): Promise<void> {
+    const params: PutInput = {
       Item: item,
       TableName: this.tableName,
-    });
-  }
+    };
 
-  // TODO: update
+    if (options.conditions) {
+      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
+        options.conditions
+      );
+      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
+        options.conditions
+      );
+      params.ConditionExpression = ConditionExpressions.getConditionExpression(
+        options.conditions
+      );
+    }
+
+    await this.documentClient.put(params);
+  }
 
   private async recursiveScan(
     options: ScanOptions<T> = {},
