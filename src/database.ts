@@ -6,23 +6,23 @@ import {
   ScanInput,
   Key as DocumentClientKey,
 } from './document-client';
-import * as QueryHelpers from './query-helpers';
+import { ConditionExpressions, KeyExpressions } from './expressions';
 
 export interface ScanOptions<T> {
-  filters?: QueryHelpers.FilterMap<T>;
+  filters?: ConditionExpressions.ConditionMap<T>;
   index?: IndexName;
   limit?: number;
 }
 
 export interface QueryOptions<T> {
-  filters?: QueryHelpers.FilterMap<T>;
+  filters?: ConditionExpressions.ConditionMap<T>;
   index?: IndexName;
   limit?: number;
   sort?: 'asc' | 'desc';
 }
 
 export interface FirstOptions<T> {
-  filters?: QueryHelpers.FilterMap<T>;
+  filters?: ConditionExpressions.ConditionMap<T>;
   index?: IndexName;
   sort?: 'asc' | 'desc';
 }
@@ -93,7 +93,7 @@ export class Database<T> {
 
   private async recursiveScan(
     options: ScanOptions<T> = {},
-    lastKey?: DocumentClientKey,
+    lastKey?: DocumentClientKey
   ): Promise<T[]> {
     const params: ScanInput = {
       TableName: this.tableName,
@@ -104,11 +104,15 @@ export class Database<T> {
     }
 
     if (options.filters) {
-      params.ExpressionAttributeNames = QueryHelpers.getAttributeNamesFromFilters(options.filters);
-      params.ExpressionAttributeValues = QueryHelpers.getAttributeValuesFromFilters(
-        options.filters,
+      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
+        options.filters
       );
-      params.FilterExpression = QueryHelpers.getFilterExpression(options.filters);
+      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
+        options.filters
+      );
+      params.FilterExpression = ConditionExpressions.getConditionExpression(
+        options.filters
+      );
     }
 
     if (options.limit && options.limit > 0) {
@@ -123,7 +127,10 @@ export class Database<T> {
 
     const { Items, LastEvaluatedKey } = await this.documentClient.scan(params);
 
-    if (LastEvaluatedKey && (!options.limit || Items && Items.length < options.limit)) {
+    if (
+      LastEvaluatedKey &&
+      (!options.limit || (Items && Items.length < options.limit))
+    ) {
       next = await this.recursiveScan(options, LastEvaluatedKey);
     }
 
@@ -135,12 +142,12 @@ export class Database<T> {
   private async recursiveQuery(
     key: Key<T>,
     options: QueryOptions<T> = {},
-    lastKey?: DocumentClientKey,
-  ) : Promise<T[]> {
+    lastKey?: DocumentClientKey
+  ): Promise<T[]> {
     const params: QueryInput = {
-      ExpressionAttributeNames: QueryHelpers.getAttributeNamesFromKey(key),
-      ExpressionAttributeValues: QueryHelpers.getAttributeValuesFromKey(key),
-      KeyConditionExpression: QueryHelpers.getKeyConditionExpression(key),
+      ExpressionAttributeNames: KeyExpressions.getAttributeNamesFromKey(key),
+      ExpressionAttributeValues: KeyExpressions.getAttributeValuesFromKey(key),
+      KeyConditionExpression: KeyExpressions.getKeyConditionExpression(key),
       TableName: this.tableName,
     };
 
@@ -151,13 +158,17 @@ export class Database<T> {
     if (options.filters) {
       Object.assign(
         params.ExpressionAttributeNames,
-        QueryHelpers.getAttributeNamesFromFilters(options.filters),
+        ConditionExpressions.getAttributeNamesFromConditions(options.filters)
       );
+
       Object.assign(
         params.ExpressionAttributeValues,
-        QueryHelpers.getAttributeValuesFromFilters(options.filters),
+        ConditionExpressions.getAttributeValuesFromConditions(options.filters)
       );
-      params.FilterExpression = QueryHelpers.getFilterExpression(options.filters);
+
+      params.FilterExpression = ConditionExpressions.getConditionExpression(
+        options.filters
+      );
     }
 
     if (options.sort) {
@@ -176,7 +187,10 @@ export class Database<T> {
 
     const { Items, LastEvaluatedKey } = await this.documentClient.query(params);
 
-    if (LastEvaluatedKey && (!options.limit || Items && Items.length < options.limit)) {
+    if (
+      LastEvaluatedKey &&
+      (!options.limit || (Items && Items.length < options.limit))
+    ) {
       next = await this.recursiveQuery(key, options, LastEvaluatedKey);
     }
 
