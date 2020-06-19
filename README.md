@@ -17,6 +17,7 @@ Unstable releases are published as `develop` - e.g. `yarn add @peak-ai/jedlik@de
 
 ```ts
 import * as jedlik from '@peak-ai/jedlik';
+import * as Joi from '@hapi/joi';
 
 interface UserProps {
   id: number;
@@ -24,9 +25,15 @@ interface UserProps {
   type: 'admin' | 'user';
 }
 
+const schema = Joi.object({
+  id: Joi.string().required(),
+  name: Joi.string().required(),
+  type: Joi.string().allow('admin', 'user').required(),
+});
+
 // the name of the DynamoDB table the model should write to
 // it is assumed this table exists
-const Users = new jedlik.Model<UserProps>({ table: 'users' });
+const Users = new jedlik.Model<UserProps>({ table: 'users', schema });
 
 const user = Users.create({ id: 1, name: 'Fred' }); // create a new document locally
 
@@ -60,9 +67,15 @@ const admins = await Users.scan({
 
 Constructor function that creates a new `Model`.
 
-##### options.table (String - required)
+##### `options.table (String - required)`
 
 Name of the DynamoDB table to interact with
+
+##### `options.schema (Schema<T> - required)`
+
+- `schema.validate(item: T): { value: T, error: { name: string, details: { message: string }[] } }`
+
+A function that validates the values in a Document and applies any defaults. This is designed to be used with [Joi](https://hapi.dev/module/joi/).
 
 ##### `config`
 
@@ -120,7 +133,6 @@ Returns a plain JavaScript object representation of the documents attributes.
 Some features that I'd still like to add
 
 - Support for more complicated filter types - [the full list is here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html)
-- Add schemas to provide things like default values, required fields, and validation - original Jedlik had something like this
 - Ability to add methods to Documents and Models
 - Ability to add "virtual properties" to documents - like getters
 - Timestamps
@@ -130,7 +142,7 @@ Some features that I'd still like to add
 
 ### Getting Started
 
-- `git clone git@github.com:PeakBI/jedlik.git`
+- `git clone git@github.com:peak-ai/jedlik.git`
 - `yarn`
 
 ### Build
