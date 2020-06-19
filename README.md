@@ -67,11 +67,11 @@ const admins = await Users.scan({
 
 Constructor function that creates a new `Model`.
 
-##### options.table (String - required)
+##### `options.table (String - required)`
 
 Name of the DynamoDB table to interact with
 
-##### options.schema (Schema<T> - required)
+##### `options.schema (Schema<T> - required)`
 
 - `schema.validate(item: T): { value: T, error: { name: string, details: { message: string }[] } }`
 

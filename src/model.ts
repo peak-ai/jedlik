@@ -10,7 +10,7 @@ import { Events, EventName, EventCallback } from './events';
 
 interface ModelOptions<T> {
   table: string;
-  schema: Schema<T>
+  schema: Schema<T>;
 }
 
 export class Model<T> {
