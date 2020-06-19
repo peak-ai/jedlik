@@ -142,7 +142,7 @@ Some features that I'd still like to add
 
 ### Getting Started
 
-- `git clone git@github.com:PeakBI/jedlik.git`
+- `git clone git@github.com:peak-ai/jedlik.git`
 - `yarn`
 
 ### Build
