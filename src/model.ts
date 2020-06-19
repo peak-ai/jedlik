@@ -27,13 +27,19 @@ export class Model<T> {
     return this.createDocument(props);
   }
 
-  public async query(key: Key<T>, options?: QueryOptions<T>): Promise<Document<T>[]> {
+  public async query(
+    key: Key<T>,
+    options?: QueryOptions<T>
+  ): Promise<Document<T>[]> {
     const items = await this.db.query(key, options);
 
-    return items.map(item => this.createDocument(item));
+    return items.map((item) => this.createDocument(item));
   }
 
-  public async first(key: Key<T>, options?: QueryOptions<T>): Promise<Document<T>> {
+  public async first(
+    key: Key<T>,
+    options?: QueryOptions<T>
+  ): Promise<Document<T>> {
     const item = await this.db.first(key, options);
 
     return this.createDocument(item);
@@ -42,7 +48,7 @@ export class Model<T> {
   public async scan(options?: ScanOptions<T>): Promise<Document<T>[]> {
     const items = await this.db.scan(options);
 
-    return items.map(item => this.createDocument(item));
+    return items.map((item) => this.createDocument(item));
   }
 
   public async get(key: Key<T>): Promise<Document<T>> {

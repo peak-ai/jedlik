@@ -93,7 +93,7 @@ export class Database<T> {
 
   private async recursiveScan(
     options: ScanOptions<T> = {},
-    lastKey?: DocumentClientKey,
+    lastKey?: DocumentClientKey
   ): Promise<T[]> {
     const params: ScanInput = {
       TableName: this.tableName,
@@ -104,11 +104,15 @@ export class Database<T> {
     }
 
     if (options.filters) {
-      params.ExpressionAttributeNames = QueryHelpers.getAttributeNamesFromFilters(options.filters);
-      params.ExpressionAttributeValues = QueryHelpers.getAttributeValuesFromFilters(
-        options.filters,
+      params.ExpressionAttributeNames = QueryHelpers.getAttributeNamesFromFilters(
+        options.filters
       );
-      params.FilterExpression = QueryHelpers.getFilterExpression(options.filters);
+      params.ExpressionAttributeValues = QueryHelpers.getAttributeValuesFromFilters(
+        options.filters
+      );
+      params.FilterExpression = QueryHelpers.getFilterExpression(
+        options.filters
+      );
     }
 
     if (options.limit && options.limit > 0) {
@@ -123,7 +127,10 @@ export class Database<T> {
 
     const { Items, LastEvaluatedKey } = await this.documentClient.scan(params);
 
-    if (LastEvaluatedKey && (!options.limit || Items && Items.length < options.limit)) {
+    if (
+      LastEvaluatedKey &&
+      (!options.limit || (Items && Items.length < options.limit))
+    ) {
       next = await this.recursiveScan(options, LastEvaluatedKey);
     }
 
@@ -135,8 +142,8 @@ export class Database<T> {
   private async recursiveQuery(
     key: Key<T>,
     options: QueryOptions<T> = {},
-    lastKey?: DocumentClientKey,
-  ) : Promise<T[]> {
+    lastKey?: DocumentClientKey
+  ): Promise<T[]> {
     const params: QueryInput = {
       ExpressionAttributeNames: QueryHelpers.getAttributeNamesFromKey(key),
       ExpressionAttributeValues: QueryHelpers.getAttributeValuesFromKey(key),
@@ -151,13 +158,15 @@ export class Database<T> {
     if (options.filters) {
       Object.assign(
         params.ExpressionAttributeNames,
-        QueryHelpers.getAttributeNamesFromFilters(options.filters),
+        QueryHelpers.getAttributeNamesFromFilters(options.filters)
       );
       Object.assign(
         params.ExpressionAttributeValues,
-        QueryHelpers.getAttributeValuesFromFilters(options.filters),
+        QueryHelpers.getAttributeValuesFromFilters(options.filters)
       );
-      params.FilterExpression = QueryHelpers.getFilterExpression(options.filters);
+      params.FilterExpression = QueryHelpers.getFilterExpression(
+        options.filters
+      );
     }
 
     if (options.sort) {
@@ -176,7 +185,10 @@ export class Database<T> {
 
     const { Items, LastEvaluatedKey } = await this.documentClient.query(params);
 
-    if (LastEvaluatedKey && (!options.limit || Items && Items.length < options.limit)) {
+    if (
+      LastEvaluatedKey &&
+      (!options.limit || (Items && Items.length < options.limit))
+    ) {
       next = await this.recursiveQuery(key, options, LastEvaluatedKey);
     }
 

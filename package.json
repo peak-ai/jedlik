@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "build": "rm -rf dist && tsc",
-    "lint": "tslint -p tsconfig.json",
+    "lint": "eslint . --fix",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "postversion": "git push && git push --tags",
