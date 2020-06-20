@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "build": "rm -rf dist && tsc",
-    "lint": "tslint -p tsconfig.json",
+    "lint": "eslint . --fix",
     "preversion": "yarn lint && yarn test",
     "postversion": "yarn build && git push --tags && yarn publish . --tag $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
     "pretest": "docker-compose up -d",
@@ -32,10 +32,14 @@
   },
   "devDependencies": {
     "@types/jest": "^24.0.16",
+    "@typescript-eslint/eslint-plugin": "^3.3.0",
+    "@typescript-eslint/parser": "^3.3.0",
+    "eslint": "^7.2.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.4",
     "jest": "^24.0.2",
+    "prettier": "^2.0.5",
     "ts-jest": "^24.0.2",
-    "tslint": "^5.18.0",
-    "tslint-config-airbnb-base": "^0.3.0",
     "typescript": "^3.5.3"
   },
   "jest": {

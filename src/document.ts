@@ -22,7 +22,12 @@ export class Document<T> {
   private events: Events<Document<T>>;
   private schema: Schema<T>;
 
-  constructor(db: Database<T>, events: Events<Document<T>>, schema: Schema<T>, props: T) {
+  constructor(
+    db: Database<T>,
+    events: Events<Document<T>>,
+    schema: Schema<T>,
+    props: T
+  ) {
     this.attributes = new Attributes(props);
     this.db = db;
     this.events = events;

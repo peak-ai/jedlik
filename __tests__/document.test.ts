@@ -81,7 +81,9 @@ describe('methods', () => {
       expect.assertions(1);
       const attributes = jest.fn();
 
-      (MockAttributes.prototype.getAll as jest.Mock).mockReturnValueOnce(attributes);
+      (MockAttributes.prototype.getAll as jest.Mock).mockReturnValueOnce(
+        attributes
+      );
       schema.validate.mockReturnValueOnce({ value: jest.fn() });
 
       await subject.save();
@@ -133,7 +135,7 @@ describe('methods', () => {
       expect(subject.save()).rejects.toBe(error);
     });
 
-    it('doesn\'t save if the validation fails', async () => {
+    it("doesn't save if the validation fails", async () => {
       expect.assertions(2);
       schema.validate.mockReturnValueOnce({ error: jest.fn() });
 

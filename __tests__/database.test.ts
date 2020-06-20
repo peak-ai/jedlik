@@ -30,28 +30,39 @@ const USERS: User[] = [];
     const user = generateUser(id);
     USERS.push(user);
   }
-}());
+})();
 
 const SORTED_USERS_ASCENDING: User[] = [
-  ...USERS.filter(user => user.type === UserType.Admin).sort((a, b) => a.id - b.id),
-  ...USERS.filter(user => user.type === UserType.User).sort((a, b) => a.id - b.id),
+  ...USERS.filter((user) => user.type === UserType.Admin).sort(
+    (a, b) => a.id - b.id
+  ),
+  ...USERS.filter((user) => user.type === UserType.User).sort(
+    (a, b) => a.id - b.id
+  ),
 ];
 
 const SORTED_USERS_DESCENDING: User[] = [
-  ...USERS.filter(user => user.type === UserType.Admin).sort((a, b) => b.id - a.id),
-  ...USERS.filter(user => user.type === UserType.User).sort((a, b) => b.id - a.id),
+  ...USERS.filter((user) => user.type === UserType.Admin).sort(
+    (a, b) => b.id - a.id
+  ),
+  ...USERS.filter((user) => user.type === UserType.User).sort(
+    (a, b) => b.id - a.id
+  ),
 ];
 
-const SORTED_USERS_SECONDARY_INDEX: User[] = (function() {
-  const sortedAges = USERS
-    .map(user => user.age)
-    .filter(((age, index, array) => array.indexOf(age) === index))
+const SORTED_USERS_SECONDARY_INDEX: User[] = (function () {
+  const sortedAges = USERS.map((user) => user.age)
+    .filter((age, index, array) => array.indexOf(age) === index)
     .sort((a, b) => a - b);
 
-  return sortedAges.reduce((list, age) => (
-    list.concat(USERS.filter(user => user.age === age).sort((a, b) => a.age - b.age))
-  ), [] as User[]);
-}());
+  return sortedAges.reduce(
+    (list, age) =>
+      list.concat(
+        USERS.filter((user) => user.age === age).sort((a, b) => a.age - b.age)
+      ),
+    [] as User[]
+  );
+})();
 
 let database: Database<User>;
 
@@ -68,43 +79,56 @@ const client = new DynamoDB.DocumentClient(dynamoConfig);
 const TABLE_NAME = 'users';
 
 beforeEach(async () => {
-  await dynamo.createTable({
-    TableName: TABLE_NAME,
-    KeySchema: [
-      { AttributeName: 'type', KeyType: 'HASH' },
-      { AttributeName: 'id', KeyType: 'RANGE' },
-    ],
-    AttributeDefinitions: [
-      { AttributeName: 'id', AttributeType: 'N' },
-      { AttributeName: 'type', AttributeType: 'S' },
-      { AttributeName: 'age', AttributeType: 'N' },
-    ],
-    GlobalSecondaryIndexes: [
-      {
-        IndexName: 'age-id',
-        KeySchema: [
-          { AttributeName: 'age', KeyType: 'HASH' },
-          { AttributeName: 'id', KeyType: 'RANGE' },
-        ],
-        Projection: { ProjectionType: 'ALL' },
-        ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
-      },
-    ],
-    ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
-  }).promise();
+  await dynamo
+    .createTable({
+      TableName: TABLE_NAME,
+      KeySchema: [
+        { AttributeName: 'type', KeyType: 'HASH' },
+        { AttributeName: 'id', KeyType: 'RANGE' },
+      ],
+      AttributeDefinitions: [
+        { AttributeName: 'id', AttributeType: 'N' },
+        { AttributeName: 'type', AttributeType: 'S' },
+        { AttributeName: 'age', AttributeType: 'N' },
+      ],
+      GlobalSecondaryIndexes: [
+        {
+          IndexName: 'age-id',
+          KeySchema: [
+            { AttributeName: 'age', KeyType: 'HASH' },
+            { AttributeName: 'id', KeyType: 'RANGE' },
+          ],
+          Projection: { ProjectionType: 'ALL' },
+          ProvisionedThroughput: {
+            ReadCapacityUnits: 1,
+            WriteCapacityUnits: 1,
+          },
+        },
+      ],
+      ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
+    })
+    .promise();
 
-  await Promise.all(USERS.map(user => client.put({
-    TableName: TABLE_NAME,
-    Item: user,
-  }).promise()));
+  await Promise.all(
+    USERS.map((user) =>
+      client
+        .put({
+          TableName: TABLE_NAME,
+          Item: user,
+        })
+        .promise()
+    )
+  );
 
   database = new Database<User>(TABLE_NAME, dynamoConfig);
 });
 
 afterEach(async () => {
-  await dynamo.deleteTable({
-    TableName: TABLE_NAME,
-  }).promise();
+  await dynamo
+    .deleteTable({
+      TableName: TABLE_NAME,
+    })
+    .promise();
 });
 
 describe('scan', () => {
@@ -120,8 +144,10 @@ describe('scan', () => {
   it('returns a filtered set of results', async () => {
     expect.assertions(1);
 
-    const result = await database.scan({ filters: { key: 'id', operator: '<', value: 3 } });
-    const expected = SORTED_USERS_ASCENDING.filter((user => user.id < 3));
+    const result = await database.scan({
+      filters: { key: 'id', operator: '<', value: 3 },
+    });
+    const expected = SORTED_USERS_ASCENDING.filter((user) => user.id < 3);
 
     expect(result).toEqual(expected);
   });
@@ -137,9 +163,9 @@ describe('scan', () => {
         ],
       },
     });
-    const expected = SORTED_USERS_ASCENDING.filter(user => (
-      (user.age > 60) || (user.type === UserType.Admin)
-    ));
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) => user.age > 60 || user.type === UserType.Admin
+    );
 
     expect(result).toEqual(expected);
   });
@@ -167,11 +193,13 @@ describe('query', () => {
   it('returns all items with the given key', async () => {
     expect.assertions(1);
 
-    const [{ id }] = SORTED_USERS_ASCENDING.filter(user => user.type === UserType.Admin);
+    const [{ id }] = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin
+    );
 
     const result = await database.query({ type: UserType.Admin, id });
     const expected = SORTED_USERS_ASCENDING.filter(
-      user => user.type === UserType.Admin && user.id === id,
+      (user) => user.type === UserType.Admin && user.id === id
     );
 
     expect(result).toEqual(expected);
@@ -181,9 +209,9 @@ describe('query', () => {
     expect.assertions(1);
 
     const result = await database.query({ type: UserType.Admin }, { limit: 4 });
-    const expected = SORTED_USERS_ASCENDING.filter(user => (
-      user.type === UserType.Admin
-    )).slice(0, 4);
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin
+    ).slice(0, 4);
 
     expect(result).toEqual(expected);
   });
@@ -191,8 +219,13 @@ describe('query', () => {
   it('returns a sorted result set', async () => {
     expect.assertions(1);
 
-    const result = await database.query({ type: UserType.Admin }, { sort: 'desc' });
-    const expected = SORTED_USERS_DESCENDING.filter(user => user.type === UserType.Admin);
+    const result = await database.query(
+      { type: UserType.Admin },
+      { sort: 'desc' }
+    );
+    const expected = SORTED_USERS_DESCENDING.filter(
+      (user) => user.type === UserType.Admin
+    );
 
     expect(result).toEqual(expected);
   });
@@ -202,11 +235,11 @@ describe('query', () => {
 
     const result = await database.query(
       { type: UserType.User },
-      { filters: { key: 'age', operator: '>', value: 50 } },
+      { filters: { key: 'age', operator: '>', value: 50 } }
     );
-    const expected = SORTED_USERS_ASCENDING.filter(user => (
-      (user.type === UserType.User) && (user.age > 50)
-    ));
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.User && user.age > 50
+    );
 
     expect(result).toEqual(expected);
   });
@@ -214,17 +247,20 @@ describe('query', () => {
   it('applies complex filters correctly', async () => {
     expect.assertions(1);
 
-    const result = await database.query({ type: UserType.Admin }, {
-      filters: {
-        $or: [
-          { key: 'age', operator: '<', value: 30 },
-          { key: 'age', operator: '>', value: 55 },
-        ],
-      },
-    });
-    const expected = SORTED_USERS_ASCENDING.filter(user => (
-      (user.type === UserType.Admin) && ((user.age > 55) || user.age < 30)
-    ));
+    const result = await database.query(
+      { type: UserType.Admin },
+      {
+        filters: {
+          $or: [
+            { key: 'age', operator: '<', value: 30 },
+            { key: 'age', operator: '>', value: 55 },
+          ],
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin && (user.age > 55 || user.age < 30)
+    );
 
     expect(result).toEqual(expected);
   });
@@ -233,7 +269,9 @@ describe('query', () => {
     expect.assertions(1);
     const [{ age }] = USERS;
     const result = await database.query({ age }, { index: 'age-id' });
-    const expected = SORTED_USERS_SECONDARY_INDEX.filter(user => user.age === age);
+    const expected = SORTED_USERS_SECONDARY_INDEX.filter(
+      (user) => user.age === age
+    );
 
     expect(result).toEqual(expected);
   });
@@ -244,7 +282,9 @@ describe('first', () => {
     expect.assertions(1);
 
     const result = await database.first({ type: UserType.Admin });
-    const [expected] = SORTED_USERS_ASCENDING.filter(user => user.type === UserType.Admin);
+    const [expected] = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin
+    );
 
     expect(result).toEqual(expected);
   });
@@ -252,17 +292,24 @@ describe('first', () => {
   it('throws an error if there is no items in the result set', async () => {
     expect.assertions(1);
 
-    await expect(database.first({
-      type: UserType.Admin,
-      id: (USERS.length * 2),
-    })).rejects.toThrow('Not Found');
+    await expect(
+      database.first({
+        type: UserType.Admin,
+        id: USERS.length * 2,
+      })
+    ).rejects.toThrow('Not Found');
   });
 
   it('returns the first item of a sorted result set', async () => {
     expect.assertions(1);
 
-    const result = await database.first({ type: UserType.Admin }, { sort: 'desc' });
-    const [expected] = SORTED_USERS_DESCENDING.filter(user => user.type === UserType.Admin);
+    const result = await database.first(
+      { type: UserType.Admin },
+      { sort: 'desc' }
+    );
+    const [expected] = SORTED_USERS_DESCENDING.filter(
+      (user) => user.type === UserType.Admin
+    );
 
     expect(result).toEqual(expected);
   });
@@ -272,11 +319,11 @@ describe('first', () => {
 
     const result = await database.first(
       { type: UserType.User },
-      { filters: { key: 'age', operator: '>', value: 50 } },
+      { filters: { key: 'age', operator: '>', value: 50 } }
     );
-    const [expected] = SORTED_USERS_ASCENDING.filter(user => (
-      (user.type === UserType.User) && (user.age > 50)
-    ));
+    const [expected] = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.User && user.age > 50
+    );
 
     expect(result).toEqual(expected);
   });
@@ -284,17 +331,20 @@ describe('first', () => {
   it('returns the first item of a complex filter set', async () => {
     expect.assertions(1);
 
-    const result = await database.first({ type: UserType.Admin }, {
-      filters: {
-        $or: [
-          { key: 'age', operator: '<', value: 30 },
-          { key: 'age', operator: '>', value: 55 },
-        ],
-      },
-    });
-    const [expected] = SORTED_USERS_ASCENDING.filter(user => (
-      (user.type === UserType.Admin) && ((user.age > 55) || user.age < 30)
-    ));
+    const result = await database.first(
+      { type: UserType.Admin },
+      {
+        filters: {
+          $or: [
+            { key: 'age', operator: '<', value: 30 },
+            { key: 'age', operator: '>', value: 55 },
+          ],
+        },
+      }
+    );
+    const [expected] = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin && (user.age > 55 || user.age < 30)
+    );
 
     expect(result).toEqual(expected);
   });
@@ -303,7 +353,9 @@ describe('first', () => {
     expect.assertions(1);
     const [{ age }] = USERS;
     const result = await database.first({ age }, { index: 'age-id' });
-    const [expected] = SORTED_USERS_SECONDARY_INDEX.filter(user => user.age === age);
+    const [expected] = SORTED_USERS_SECONDARY_INDEX.filter(
+      (user) => user.age === age
+    );
 
     expect(result).toEqual(expected);
   });
@@ -312,7 +364,9 @@ describe('first', () => {
 describe('get', () => {
   it('returns the item with the given key', async () => {
     expect.assertions(1);
-    const [, , expected] = SORTED_USERS_ASCENDING.filter(user => user.type === UserType.Admin);
+    const [, , expected] = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin
+    );
 
     const result = await database.get({ type: expected.type, id: expected.id });
 
@@ -322,17 +376,21 @@ describe('get', () => {
   it('throws an error if there is no items in the result set', async () => {
     expect.assertions(1);
 
-    await expect(database.get({
-      type: UserType.Admin,
-      id: (USERS.length * 2),
-    })).rejects.toThrow('Not Found');
+    await expect(
+      database.get({
+        type: UserType.Admin,
+        id: USERS.length * 2,
+      })
+    ).rejects.toThrow('Not Found');
   });
 });
 
 describe('delete', () => {
   it('deletes the item with the given key', async () => {
     expect.assertions(2);
-    const [, , item] = SORTED_USERS_ASCENDING.filter(user => user.type === UserType.Admin);
+    const [, , item] = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin
+    );
 
     const before = await database.query({ type: item.type, id: item.id });
 
@@ -349,7 +407,7 @@ describe('delete', () => {
     expect.assertions(3);
 
     const [item] = SORTED_USERS_ASCENDING.filter(
-      user => user.type === UserType.Admin,
+      (user) => user.type === UserType.Admin
     );
 
     const before = await database.query({ type: item.type, id: item.id });
@@ -358,8 +416,8 @@ describe('delete', () => {
 
     try {
       await database.delete(
-       { type: item.type, id: item.id },
-        { conditions: { key: 'age', operator: '<>', value: item.age } },
+        { type: item.type, id: item.id },
+        { conditions: { key: 'age', operator: '<>', value: item.age } }
       );
     } catch (error) {
       expect(error).toBeDefined();
@@ -374,7 +432,7 @@ describe('delete', () => {
     expect.assertions(2);
 
     const [, , , item] = SORTED_USERS_ASCENDING.filter(
-      user => user.type === UserType.Admin,
+      (user) => user.type === UserType.Admin
     );
 
     const before = await database.query({ type: item.type, id: item.id });
@@ -383,7 +441,7 @@ describe('delete', () => {
 
     await database.delete(
       { type: item.type, id: item.id },
-      { conditions: { key: 'age', operator: '=', value: item.age } },
+      { conditions: { key: 'age', operator: '=', value: item.age } }
     );
 
     const after = await database.query({ type: item.type, id: item.id });
@@ -443,7 +501,9 @@ describe('put', () => {
     };
 
     try {
-      await database.put(updated, { conditions: { key: 'id', operator: '<>', value: user.id } });
+      await database.put(updated, {
+        conditions: { key: 'id', operator: '<>', value: user.id },
+      });
     } catch (error) {
       expect(error).toBeDefined();
     }
@@ -465,7 +525,9 @@ describe('put', () => {
       age: before.age + 1,
     };
 
-    await database.put(updated, { conditions: { key: 'id', operator: '=', value: user.id } });
+    await database.put(updated, {
+      conditions: { key: 'id', operator: '=', value: user.id },
+    });
 
     const after = await database.get({ type: user.type, id: user.id });
 
