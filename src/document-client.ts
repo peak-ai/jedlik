@@ -7,6 +7,8 @@ export type DocumentClientOptions = DynamoDB.DocumentClient.DocumentClientOption
 
 export type Key = DynamoDB.DocumentClient.Key;
 export type IndexName = DynamoDB.DocumentClient.IndexName;
+export type DeleteInput = DynamoDB.DocumentClient.DeleteItemInput;
+export type PutInput = DynamoDB.DocumentClient.PutItemInput;
 export type QueryInput = DynamoDB.DocumentClient.QueryInput;
 export type ScanInput = DynamoDB.DocumentClient.ScanInput;
 export type UpdateItemInput = DynamoDB.DocumentClient.UpdateItemInput;

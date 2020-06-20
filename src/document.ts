@@ -1,5 +1,5 @@
 import { Attributes } from './attributes';
-import { Database } from './database';
+import { Database, PutOptions } from './database';
 import { Events } from './events';
 
 type ValidationError = {
@@ -46,7 +46,7 @@ export class Document<T> {
     return this.attributes.getAll();
   }
 
-  public async save(): Promise<void> {
+  public async save(options?: PutOptions<T>): Promise<void> {
     const validation = this.schema.validate(this.toObject());
 
     if (validation.error) {
@@ -54,7 +54,8 @@ export class Document<T> {
     }
 
     this.set(validation.value);
-    await this.db.put(validation.value);
+
+    await this.db.put(validation.value, options);
 
     this.events.emit('save', this);
   }

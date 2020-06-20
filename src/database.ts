@@ -2,29 +2,39 @@ import {
   DocumentClient,
   DocumentClientOptions,
   IndexName,
+  DeleteInput,
+  PutInput,
   QueryInput,
   ScanInput,
   Key as DocumentClientKey,
 } from './document-client';
-import * as QueryHelpers from './query-helpers';
+import { ConditionExpressions, KeyExpressions } from './expressions';
 
 export interface ScanOptions<T> {
-  filters?: QueryHelpers.FilterMap<T>;
+  filters?: ConditionExpressions.ConditionMap<T>;
   index?: IndexName;
   limit?: number;
 }
 
 export interface QueryOptions<T> {
-  filters?: QueryHelpers.FilterMap<T>;
+  filters?: ConditionExpressions.ConditionMap<T>;
   index?: IndexName;
   limit?: number;
   sort?: 'asc' | 'desc';
 }
 
 export interface FirstOptions<T> {
-  filters?: QueryHelpers.FilterMap<T>;
+  filters?: ConditionExpressions.ConditionMap<T>;
   index?: IndexName;
   sort?: 'asc' | 'desc';
+}
+
+export interface PutOptions<T> {
+  conditions?: ConditionExpressions.ConditionMap<T>;
+}
+
+export interface DeleteOptions<T> {
+  conditions?: ConditionExpressions.ConditionMap<T>;
 }
 
 export type Key<T> = Partial<T>;
@@ -75,21 +85,50 @@ export class Database<T> {
     return Item as T;
   }
 
-  public async delete(key: Key<T>): Promise<void> {
-    await this.documentClient.delete({
+  public async delete(
+    key: Key<T>,
+    options: DeleteOptions<T> = {}
+  ): Promise<void> {
+    const params: DeleteInput = {
       Key: key,
       TableName: this.tableName,
-    });
+    };
+
+    if (options.conditions) {
+      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
+        options.conditions
+      );
+      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
+        options.conditions
+      );
+      params.ConditionExpression = ConditionExpressions.getConditionExpression(
+        options.conditions
+      );
+    }
+
+    await this.documentClient.delete(params);
   }
 
-  public async put(item: T): Promise<void> {
-    await this.documentClient.put({
+  public async put(item: T, options: PutOptions<T> = {}): Promise<void> {
+    const params: PutInput = {
       Item: item,
       TableName: this.tableName,
-    });
-  }
+    };
 
-  // TODO: update
+    if (options.conditions) {
+      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
+        options.conditions
+      );
+      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
+        options.conditions
+      );
+      params.ConditionExpression = ConditionExpressions.getConditionExpression(
+        options.conditions
+      );
+    }
+
+    await this.documentClient.put(params);
+  }
 
   private async recursiveScan(
     options: ScanOptions<T> = {},
@@ -104,13 +143,13 @@ export class Database<T> {
     }
 
     if (options.filters) {
-      params.ExpressionAttributeNames = QueryHelpers.getAttributeNamesFromFilters(
+      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
         options.filters
       );
-      params.ExpressionAttributeValues = QueryHelpers.getAttributeValuesFromFilters(
+      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
         options.filters
       );
-      params.FilterExpression = QueryHelpers.getFilterExpression(
+      params.FilterExpression = ConditionExpressions.getConditionExpression(
         options.filters
       );
     }
@@ -145,9 +184,9 @@ export class Database<T> {
     lastKey?: DocumentClientKey
   ): Promise<T[]> {
     const params: QueryInput = {
-      ExpressionAttributeNames: QueryHelpers.getAttributeNamesFromKey(key),
-      ExpressionAttributeValues: QueryHelpers.getAttributeValuesFromKey(key),
-      KeyConditionExpression: QueryHelpers.getKeyConditionExpression(key),
+      ExpressionAttributeNames: KeyExpressions.getAttributeNamesFromKey(key),
+      ExpressionAttributeValues: KeyExpressions.getAttributeValuesFromKey(key),
+      KeyConditionExpression: KeyExpressions.getKeyConditionExpression(key),
       TableName: this.tableName,
     };
 
@@ -158,13 +197,15 @@ export class Database<T> {
     if (options.filters) {
       Object.assign(
         params.ExpressionAttributeNames,
-        QueryHelpers.getAttributeNamesFromFilters(options.filters)
+        ConditionExpressions.getAttributeNamesFromConditions(options.filters)
       );
+
       Object.assign(
         params.ExpressionAttributeValues,
-        QueryHelpers.getAttributeValuesFromFilters(options.filters)
+        ConditionExpressions.getAttributeValuesFromConditions(options.filters)
       );
-      params.FilterExpression = QueryHelpers.getFilterExpression(
+
+      params.FilterExpression = ConditionExpressions.getConditionExpression(
         options.filters
       );
     }

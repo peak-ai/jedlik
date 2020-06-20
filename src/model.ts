@@ -1,6 +1,7 @@
 import {
   Database,
   DatabaseOptions,
+  DeleteOptions,
   Key,
   QueryOptions,
   ScanOptions,
@@ -57,8 +58,8 @@ export class Model<T> {
     return this.createDocument(item);
   }
 
-  public async delete(key: Key<T>): Promise<void> {
-    await this.db.delete(key);
+  public async delete(key: Key<T>, options?: DeleteOptions<T>): Promise<void> {
+    await this.db.delete(key, options);
     this.events.emit('delete');
   }
 

@@ -13,9 +13,8 @@
   "scripts": {
     "build": "rm -rf dist && tsc",
     "lint": "eslint . --fix",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test && npm run lint",
-    "postversion": "git push && git push --tags",
+    "preversion": "yarn lint && yarn test",
+    "postversion": "yarn build && git push --tags && yarn publish . --tag $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
     "pretest": "docker-compose up -d",
     "test": "jest",
     "posttest": "docker stop $(docker ps -aqf \"name=jedlik\")"

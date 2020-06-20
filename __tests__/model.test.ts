@@ -265,19 +265,21 @@ describe('methods', () => {
 
   describe('delete', () => {
     it('deletes the database item with the given key', async () => {
-      expect.assertions(1);
+      expect.assertions(2);
 
       const key = { id: Math.random() * 100 };
+      const options = {};
 
-      await model.delete(key);
+      await model.delete(key, options);
 
-      expect(mockDatabase.delete).toHaveBeenCalledWith(key);
+      expect((mockDatabase.delete as jest.Mock).mock.calls[0][0]).toBe(key);
+      expect((mockDatabase.delete as jest.Mock).mock.calls[0][1]).toBe(options);
     });
 
     it('emits a delete event', async () => {
       expect.assertions(1);
 
-      await model.delete({});
+      await model.delete({}, {});
 
       expect(MockEvents.prototype.emit).toHaveBeenCalledWith('delete');
     });
