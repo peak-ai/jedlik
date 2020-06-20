@@ -16,7 +16,7 @@ it('calls all registered event handlers for the given event name with the given 
   expect(handler2).toHaveBeenCalledWith(data);
 });
 
-it('doesn\'t call handlers registered to different events', () => {
+it("doesn't call handlers registered to different events", () => {
   const handler = jest.fn();
 
   events.on('save', handler);

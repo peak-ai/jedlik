@@ -10,8 +10,8 @@ let id: number;
 let name: string;
 
 beforeEach(() => {
-  id = Math.ceil((Math.random() * 100));
-  name = Math.ceil((Math.random() * 100)).toString();
+  id = Math.ceil(Math.random() * 100);
+  name = Math.ceil(Math.random() * 100).toString();
   attributes = new Attributes({ id, name });
 });
 

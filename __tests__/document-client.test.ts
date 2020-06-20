@@ -3,7 +3,9 @@ import { DocumentClient } from '../src/document-client';
 
 jest.mock('aws-sdk');
 
-const awsDocumentClient = (DynamoDB.DocumentClient as jest.Mock<DynamoDB.DocumentClient>);
+const awsDocumentClient = DynamoDB.DocumentClient as jest.Mock<
+  DynamoDB.DocumentClient
+>;
 
 const data = jest.fn();
 const error = jest.fn();
@@ -53,11 +55,13 @@ describe('batchGet', () => {
 describe('batchWrite', () => {
   const params: DynamoDB.DocumentClient.BatchWriteItemInput = {
     RequestItems: {
-      Table: [{
-        DeleteRequest: {
-          Key: { id: 1 },
+      Table: [
+        {
+          DeleteRequest: {
+            Key: { id: 1 },
+          },
         },
-      }],
+      ],
     },
   };
 
@@ -259,12 +263,14 @@ describe('scan', () => {
 
 describe('transactGet', () => {
   const params: DynamoDB.DocumentClient.TransactGetItemsInput = {
-    TransactItems: [{
-      Get: {
-        Key: { id: 1 },
-        TableName: 'table',
+    TransactItems: [
+      {
+        Get: {
+          Key: { id: 1 },
+          TableName: 'table',
+        },
       },
-    }],
+    ],
   };
 
   beforeEach(() => {
@@ -276,7 +282,9 @@ describe('transactGet', () => {
   it('calls the AWS DocumentClient transactGet', () => {
     expect.assertions(1);
     documentClient.transactGet(params);
-    expect(awsDocumentClient.prototype.transactGet).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.transactGet).toHaveBeenCalledWith(
+      params
+    );
   });
 
   it('resolves with the data if transactGet operation is successful', () => {
@@ -294,12 +302,14 @@ describe('transactGet', () => {
 
 describe('transactWrite', () => {
   const params: DynamoDB.DocumentClient.TransactWriteItemsInput = {
-    TransactItems: [{
-      Delete: {
-        Key: { id: 1 },
-        TableName: 'table',
+    TransactItems: [
+      {
+        Delete: {
+          Key: { id: 1 },
+          TableName: 'table',
+        },
       },
-    }],
+    ],
   };
 
   beforeEach(() => {
@@ -311,7 +321,9 @@ describe('transactWrite', () => {
   it('calls the AWS DocumentClient transactWrite', () => {
     expect.assertions(1);
     documentClient.transactWrite(params);
-    expect(awsDocumentClient.prototype.transactWrite).toHaveBeenCalledWith(params);
+    expect(awsDocumentClient.prototype.transactWrite).toHaveBeenCalledWith(
+      params
+    );
   });
 
   it('resolves with the data if transactWrite operation is successful', () => {
