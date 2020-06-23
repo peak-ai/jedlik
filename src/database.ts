@@ -6,9 +6,15 @@ import {
   PutInput,
   QueryInput,
   ScanInput,
+  UpdateInput,
   Key as DocumentClientKey,
 } from './document-client';
-import { ConditionExpressions, KeyExpressions } from './expressions';
+
+import {
+  ConditionExpressions,
+  KeyExpressions,
+  UpdateExpressions,
+} from './expressions';
 
 export interface ScanOptions<T> {
   filters?: ConditionExpressions.ConditionMap<T>;
@@ -128,6 +134,28 @@ export class Database<T> {
     }
 
     await this.documentClient.put(params);
+  }
+
+  public async update(
+    key: Key<T>,
+    updates: UpdateExpressions.UpdateMap<T>
+  ): Promise<T> {
+    const params: UpdateInput = {
+      TableName: this.tableName,
+      Key: key,
+      UpdateExpression: UpdateExpressions.getUpdateExpression(updates),
+      ExpressionAttributeNames: UpdateExpressions.getAttributeNamesFromUpdates(
+        updates
+      ),
+      ExpressionAttributeValues: UpdateExpressions.getAttributeValuesFromUpdates(
+        updates
+      ),
+      ReturnValues: 'ALL_NEW',
+    };
+
+    const { Attributes } = await this.documentClient.update(params);
+
+    return Attributes as T;
   }
 
   private async recursiveScan(

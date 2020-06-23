@@ -11,6 +11,7 @@ interface User {
   type: UserType;
   name: string;
   age: number;
+  email?: string;
 }
 
 function generateUser(id: number): User {
@@ -532,5 +533,62 @@ describe('put', () => {
     const after = await database.get({ type: user.type, id: user.id });
 
     expect(after).toEqual(updated);
+  });
+});
+
+describe('update', () => {
+  it('sets attributes on an existing item in the database', async () => {
+    expect.assertions(3);
+
+    const before = await database.scan();
+    const [user] = before;
+
+    const result = await database.update(
+      { type: user.type, id: user.id },
+      {
+        set: [{ age: user.age + 1, name: 'TESTING', email: 'email@test.com' }],
+      }
+    );
+
+    expect(result).toEqual({
+      ...user,
+      name: 'TESTING',
+      age: user.age + 1,
+      email: 'email@test.com',
+    });
+
+    const after = await database.scan();
+    expect(after).not.toContainEqual(user);
+    expect(after).toContainEqual(result);
+  });
+
+  it("only performs conditional updates for keys that don't exist on an existing item in the database", async () => {
+    expect.assertions(3);
+
+    const before = await database.scan();
+    const [user] = before;
+
+    const result = await database.update(
+      { type: user.type, id: user.id },
+      {
+        set: [
+          { age: user.age + 1 },
+          { name: 'TESTING', email: 'email@test.com' },
+        ],
+      }
+    );
+
+    const expected = {
+      ...user,
+      age: user.age + 1,
+      name: user.name,
+      email: 'email@test.com',
+    };
+
+    expect(result).toEqual(expected);
+
+    const after = await database.scan();
+    expect(after).not.toContainEqual(user);
+    expect(after).toContainEqual(result);
   });
 });
