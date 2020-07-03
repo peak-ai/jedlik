@@ -11,6 +11,11 @@ interface User {
   type: UserType;
   name: string;
   age: number;
+  address: {
+    street: string;
+    city?: string;
+    postcode: string;
+  };
   email?: string;
 }
 
@@ -21,6 +26,10 @@ function generateUser(id: number): User {
     type,
     name: `${type}-${id}`,
     age: Math.ceil(Math.random() * 80),
+    address: {
+      street: `${id} street`,
+      postcode: `${id}`,
+    },
   };
 }
 
@@ -562,7 +571,7 @@ describe('update', () => {
     expect(after).toContainEqual(result);
   });
 
-  it("only performs conditional updates for keys that don't exist on an existing item in the database", async () => {
+  it("only performs conditional SET updates for keys that don't exist on an existing item in the database", async () => {
     expect.assertions(3);
 
     const before = await database.scan();
@@ -586,6 +595,62 @@ describe('update', () => {
     };
 
     expect(result).toEqual(expected);
+
+    const after = await database.scan();
+    expect(after).not.toContainEqual(user);
+    expect(after).toContainEqual(result);
+  });
+
+  it('sets nested attributes', async () => {
+    expect.assertions(3);
+
+    const before = await database.scan();
+    const [user] = before;
+
+    const result = await database.update(
+      { type: user.type, id: user.id },
+      {
+        set: [{ address: { street: `${user.id} boulevard` } }],
+      }
+    );
+
+    expect(result).toEqual({
+      ...user,
+      address: {
+        ...user.address,
+        street: `${user.id} boulevard`,
+      },
+    });
+
+    const after = await database.scan();
+    expect(after).not.toContainEqual(user);
+    expect(after).toContainEqual(result);
+  });
+
+  it("conditionally sets nested attributes that don't exist", async () => {
+    expect.assertions(3);
+
+    const before = await database.scan();
+    const [user] = before;
+
+    const result = await database.update(
+      { type: user.type, id: user.id },
+      {
+        set: [
+          { address: { postcode: 'POSTCODE!!!!' } },
+          { address: { street: `${user.id} boulevard`, city: 'Manchester' } },
+        ],
+      }
+    );
+
+    expect(result).toEqual({
+      ...user,
+      address: {
+        ...user.address,
+        postcode: 'POSTCODE!!!!',
+        city: 'Manchester',
+      },
+    });
 
     const after = await database.scan();
     expect(after).not.toContainEqual(user);

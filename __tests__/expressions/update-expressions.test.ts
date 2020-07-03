@@ -11,6 +11,13 @@ type TestType = {
   a: number;
   b: string;
   c: boolean;
+  d: {
+    e: string;
+    f: number;
+    g: {
+      h: boolean;
+    };
+  };
 };
 
 describe('SET expressions', () => {
@@ -31,8 +38,8 @@ describe('SET expressions', () => {
     describe('getAttributeValuesFromUpdates', () => {
       it('gets attribute values from set expressions', () => {
         expect(getAttributeValuesFromUpdates(updates)).toEqual({
-          [`:${encode('a2')}`]: 2,
-          [`:${encode('b3')}`]: '3',
+          [`:${encode('a=2')}`]: 2,
+          [`:${encode('b=3')}`]: '3',
         });
       });
     });
@@ -40,7 +47,7 @@ describe('SET expressions', () => {
     describe('getUpdateExpression', () => {
       it('parses SET expressions', () => {
         expect(getUpdateExpression(updates)).toEqual(
-          `SET #a = :${encode('a2')}, #b = :${encode('b3')}`
+          `SET #a = :${encode('a=2')}, #b = :${encode('b=3')}`
         );
       });
     });
@@ -67,9 +74,9 @@ describe('SET expressions', () => {
     describe('getAttributeValuesFromUpdates', () => {
       it('gets attribute values from set expressions', () => {
         expect(getAttributeValuesFromUpdates(updates)).toEqual({
-          [`:${encode('a2')}`]: 2,
-          [`:${encode('b4')}`]: '4',
-          [`:${encode('ctrue')}`]: true,
+          [`:${encode('a=2')}`]: 2,
+          [`:${encode('b=4')}`]: '4',
+          [`:${encode('c=true')}`]: true,
         });
       });
     });
@@ -77,10 +84,109 @@ describe('SET expressions', () => {
     describe('getUpdateExpression', () => {
       it('parses SET expressions', () => {
         expect(getUpdateExpression(updates)).toEqual(
-          `SET #a = :${encode('a2')}, #b = if_not_exists(#b, :${encode(
-            'b4'
-          )}), #c = if_not_exists(#c, :${encode('ctrue')})`
+          `SET #a = :${encode('a=2')}, ` +
+            `#b = if_not_exists(#b,:${encode('b=4')}), ` +
+            `#c = if_not_exists(#c,:${encode('c=true')})`
         );
+      });
+    });
+  });
+
+  describe('with nested updates', () => {
+    const updates: UpdateMap<TestType> = {
+      set: [{ a: 2, d: { e: 'hello', f: 8, g: { h: false } } }],
+    };
+
+    describe('getAttributeNamesFromUpdates', () => {
+      it('gets nested attribute names from set expressions', () => {
+        expect(getAttributeNamesFromUpdates(updates)).toEqual({
+          '#a': 'a',
+          '#d': 'd',
+          '#e': 'e',
+          '#f': 'f',
+          '#g': 'g',
+          '#h': 'h',
+        });
+      });
+    });
+
+    describe('getAttributeValuesFromUpdates', () => {
+      it('gets nested attribute values from set expressions', () => {
+        expect(getAttributeValuesFromUpdates(updates)).toEqual({
+          [`:${encode('a=2')}`]: 2,
+          [`:${encode('d.e=hello')}`]: 'hello',
+          [`:${encode('d.f=8')}`]: 8,
+          [`:${encode('d.g.h=false')}`]: false,
+        });
+      });
+    });
+
+    describe('getUpdateExpression', () => {
+      it('parses nested SET expressions', () => {
+        expect(getUpdateExpression(updates)).toEqual(
+          `SET #a = :${encode('a=2')}, ` +
+            `#d.#e = :${encode('d.e=hello')}, ` +
+            `#d.#f = :${encode('d.f=8')}, ` +
+            `#d.#g.#h = :${encode('d.g.h=false')}`
+        );
+      });
+    });
+  });
+
+  describe('with conditional nested updates', () => {
+    const updates: UpdateMap<TestType> = {
+      set: [
+        { a: 2, d: { e: 'hello' } },
+        { b: 'new-value', d: { f: 8, g: { h: false } } },
+      ],
+    };
+
+    describe('getAttributeNamesFromUpdates', () => {
+      it('gets nested attribute names from set expressions', () => {
+        expect(getAttributeNamesFromUpdates(updates)).toEqual({
+          '#a': 'a',
+          '#b': 'b',
+          '#d': 'd',
+          '#e': 'e',
+          '#f': 'f',
+          '#g': 'g',
+          '#h': 'h',
+        });
+      });
+    });
+
+    describe('getAttributeValuesFromUpdates', () => {
+      it('gets nested attribute values from set expressions', () => {
+        expect(getAttributeValuesFromUpdates(updates)).toEqual({
+          [`:${encode('a=2')}`]: 2,
+          [`:${encode('b=new-value')}`]: 'new-value',
+          [`:${encode('d.e=hello')}`]: 'hello',
+          [`:${encode('d.f=8')}`]: 8,
+          [`:${encode('d.g.h=false')}`]: false,
+        });
+      });
+    });
+
+    describe('getUpdateExpression', () => {
+      it('parses nested SET expressions', () => {
+        const result = getUpdateExpression(updates);
+
+        const action = result.substring(0, 4);
+        const statements = result.substring(4).split(', ');
+
+        const expected = [
+          `#a = :${encode('a=2')}`,
+          `#d.#e = :${encode('d.e=hello')}`,
+          `#b = if_not_exists(#b,:${encode('b=new-value')})`,
+          `#d.#f = if_not_exists(#d.#f,:${encode('d.f=8')})`,
+          `#d.#g.#h = if_not_exists(#d.#g.#h,:${encode('d.g.h=false')})`,
+        ];
+
+        expect(action).toBe('SET ');
+        expect(statements.length).toEqual(expected.length);
+        expected.forEach((statement) => {
+          expect(statements).toContain(statement);
+        });
       });
     });
   });

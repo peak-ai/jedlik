@@ -51,7 +51,7 @@ function getAttributeValues<T>({
   value,
 }: Condition<T>): ExpressionAttributeValueMap {
   return {
-    [`:${encode(`${key}${value}`)}`]: value,
+    [`:${encode(`${key}=${value}`)}`]: value,
   };
 }
 
@@ -69,7 +69,7 @@ function getAttributeValuesFromConditionMaps<T>(
 
 function getSimpleExpression<T>(condition: Condition<T>): string {
   return `#${condition.key} ${condition.operator} :${encode(
-    `${condition.key}${condition.value}`
+    `${condition.key}=${condition.value}`
   )}`;
 }
 

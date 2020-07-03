@@ -73,7 +73,7 @@ describe('getAttributeValuesFromConditions', () => {
     const value = 'value';
     const filter: ConditionMap<any> = { key, operator: '=', value };
 
-    const encoded = encode(key + value);
+    const encoded = encode(key + '=' + value);
 
     expect(getAttributeValuesFromConditions(filter)).toEqual({
       [`:${encoded}`]: value,
@@ -93,8 +93,8 @@ describe('getAttributeValuesFromConditions', () => {
       ],
     };
 
-    const encoded1 = encode(key1 + value1);
-    const encoded2 = encode(key2 + value2);
+    const encoded1 = encode(key1 + '=' + value1);
+    const encoded2 = encode(key2 + '=' + value2);
 
     expect(getAttributeValuesFromConditions(filter)).toEqual({
       [`:${encoded1}`]: value1,
@@ -115,8 +115,8 @@ describe('getAttributeValuesFromConditions', () => {
       ],
     };
 
-    const encoded1 = encode(key1 + value1);
-    const encoded2 = encode(key2 + value2);
+    const encoded1 = encode(key1 + '=' + value1);
+    const encoded2 = encode(key2 + '=' + value2);
 
     expect(getAttributeValuesFromConditions(filter)).toEqual({
       [`:${encoded1}`]: value1,
@@ -136,8 +136,8 @@ describe('getAttributeValuesFromConditions', () => {
       ],
     };
 
-    const encoded1 = encode(key + value1);
-    const encoded2 = encode(key + value2);
+    const encoded1 = encode(key + '=' + value1);
+    const encoded2 = encode(key + '=' + value2);
 
     expect(getAttributeValuesFromConditions(filter)).toEqual({
       [`:${encoded1}`]: value1,
@@ -164,9 +164,9 @@ describe('getAttributeValuesFromConditions', () => {
       ],
     };
 
-    const encoded1 = encode(key1 + value1);
-    const encoded2 = encode(key2 + value2);
-    const encoded3 = encode(key3 + value3);
+    const encoded1 = encode(key1 + '=' + value1);
+    const encoded2 = encode(key2 + '=' + value2);
+    const encoded3 = encode(key3 + '=' + value3);
 
     expect(getAttributeValuesFromConditions(filter)).toEqual({
       [`:${encoded1}`]: value1,
@@ -184,7 +184,7 @@ describe('getConditionExpression', () => {
       value: 'value',
     };
 
-    const encoded = encode(filter.key + filter.value);
+    const encoded = encode(filter.key + '=' + filter.value);
 
     expect(getConditionExpression(filter)).toEqual(
       `#${filter.key} = :${encoded}`
@@ -198,7 +198,7 @@ describe('getConditionExpression', () => {
       value: 'value',
     };
 
-    const encoded = encode(filter.key + filter.value);
+    const encoded = encode(filter.key + '=' + filter.value);
 
     expect(getConditionExpression(filter)).toEqual(
       `#${filter.key} > :${encoded}`
@@ -212,7 +212,7 @@ describe('getConditionExpression', () => {
       value: 'value',
     };
 
-    const encoded = encode(filter.key + filter.value);
+    const encoded = encode(filter.key + '=' + filter.value);
 
     expect(getConditionExpression(filter)).toEqual(
       `#${filter.key} < :${encoded}`
@@ -226,7 +226,7 @@ describe('getConditionExpression', () => {
       value: 'value',
     };
 
-    const encoded = encode(filter.key + filter.value);
+    const encoded = encode(filter.key + '=' + filter.value);
 
     expect(getConditionExpression(filter)).toEqual(
       `#${filter.key} >= :${encoded}`
@@ -240,7 +240,7 @@ describe('getConditionExpression', () => {
       value: 'value',
     };
 
-    const encoded = encode(filter.key + filter.value);
+    const encoded = encode(filter.key + '=' + filter.value);
 
     expect(getConditionExpression(filter)).toEqual(
       `#${filter.key} <= :${encoded}`
@@ -254,7 +254,7 @@ describe('getConditionExpression', () => {
       value: 'value',
     };
 
-    const encoded = encode(filter.key + filter.value);
+    const encoded = encode(filter.key + '=' + filter.value);
 
     expect(getConditionExpression(filter)).toEqual(
       `#${filter.key} <> :${encoded}`
@@ -274,8 +274,8 @@ describe('getConditionExpression', () => {
       ],
     };
 
-    const encoded1 = encode(key1 + value1);
-    const encoded2 = encode(key2 + value2);
+    const encoded1 = encode(key1 + '=' + value1);
+    const encoded2 = encode(key2 + '=' + value2);
 
     expect(getConditionExpression(filter)).toEqual(
       `(#${key1} = :${encoded1} AND #${key2} = :${encoded2})`
@@ -295,8 +295,8 @@ describe('getConditionExpression', () => {
       ],
     };
 
-    const encoded1 = encode(key1 + value1);
-    const encoded2 = encode(key2 + value2);
+    const encoded1 = encode(key1 + '=' + value1);
+    const encoded2 = encode(key2 + '=' + value2);
 
     expect(getConditionExpression(filter)).toEqual(
       `(#${key1} = :${encoded1} OR #${key2} = :${encoded2})`
@@ -322,9 +322,9 @@ describe('getConditionExpression', () => {
       ],
     };
 
-    const encoded1 = encode(key1 + value1);
-    const encoded2 = encode(key2 + value2);
-    const encoded3 = encode(key3 + value3);
+    const encoded1 = encode(key1 + '=' + value1);
+    const encoded2 = encode(key2 + '=' + value2);
+    const encoded3 = encode(key3 + '=' + value3);
 
     expect(getConditionExpression(filter)).toEqual(
       `(#${key1} = :${encoded1} OR (#${key2} = :${encoded2} AND #${key3} = :${encoded3}))`

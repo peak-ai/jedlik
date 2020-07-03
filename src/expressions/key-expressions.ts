@@ -21,7 +21,7 @@ export function getAttributeValuesFromKey(
   return Object.entries(key).reduce(
     (values, [k, v]) => ({
       ...values,
-      [`:${encode(k + v)}`]: v,
+      [`:${encode(k + '=' + v)}`]: v,
     }),
     {}
   );
@@ -30,7 +30,7 @@ export function getAttributeValuesFromKey(
 export function getKeyConditionExpression(key: Key): string {
   return Object.entries(key).reduce(
     (expression, [k, v], i) =>
-      `${expression}${i === 0 ? '' : ' AND '}#${k} = :${encode(k + v)}`,
+      `${expression}${i === 0 ? '' : ' AND '}#${k} = :${encode(k + '=' + v)}`,
     ''
   );
 }
