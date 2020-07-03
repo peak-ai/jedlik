@@ -147,11 +147,16 @@ export class Database<T> {
       ExpressionAttributeNames: UpdateExpressions.getAttributeNamesFromUpdates(
         updates
       ),
-      ExpressionAttributeValues: UpdateExpressions.getAttributeValuesFromUpdates(
-        updates
-      ),
       ReturnValues: 'ALL_NEW',
     };
+
+    const ExpressionAttributeValues = UpdateExpressions.getAttributeValuesFromUpdates(
+      updates
+    );
+
+    if (Object.keys(ExpressionAttributeValues).length > 0) {
+      params.ExpressionAttributeValues = ExpressionAttributeValues;
+    }
 
     const { Attributes } = await this.documentClient.update(params);
 

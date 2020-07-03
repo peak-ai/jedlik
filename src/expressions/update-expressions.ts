@@ -12,8 +12,13 @@ type SetUpdate<T> = DeepPartial<T>;
 
 type SetUpdates<T> = [SetUpdate<T>, SetUpdate<T>?];
 
+type RemoveUpdates<T> = {
+  [P in keyof T]?: RemoveUpdates<T[P]> | true;
+};
+
 export type UpdateMap<T> = {
   set?: SetUpdates<T>;
+  remove?: RemoveUpdates<T>;
 };
 
 function getNameKey(key: string): string {
@@ -58,31 +63,12 @@ function getValueKey(key: string, value: unknown): string {
   return `:${encode(`${key}=${value}`)}`;
 }
 
-// function getValueKeys(
-//   key: string,
-//   value: unknown
-// ): ExpressionAttributeValueMap {
-//   if (Object.getPrototypeOf(value) === Object.prototype) {
-//     return Object.entries(value as Record<string, unknown>).reduce(
-//       (acc, [k, v]) => ({
-//         ...acc,
-//         ...getValueKeys(`${key}.${k}`, v),
-//       }),
-//       {}
-//     );
-//   }
-//   return { [getValueKey(key, value)]: value };
-// }
-
-function getUnencryptedValueKeys(
-  key: string,
-  value: unknown
-): ExpressionAttributeValueMap {
+function getValueMap(key: string, value: unknown): ExpressionAttributeValueMap {
   if (Object.getPrototypeOf(value) === Object.prototype) {
     return Object.entries(value as Record<string, unknown>).reduce(
       (acc, [k, v]) => ({
         ...acc,
-        ...getUnencryptedValueKeys(`${key}.${k}`, v),
+        ...getValueMap(`${key}.${k}`, v),
       }),
       {}
     );
@@ -113,6 +99,10 @@ export function getAttributeNamesFromUpdates<T>(
     }
   }
 
+  if (updates.remove) {
+    names = Object.entries(updates.remove).reduce(toAttributeNameMap, names);
+  }
+
   return names;
 }
 
@@ -121,7 +111,7 @@ const toAttributeValueMap = (
   [key, value]: [string, unknown]
 ): ExpressionAttributeNameMap => ({
   ...acc,
-  ...getUnencryptedValueKeys(key, value),
+  ...getValueMap(key, value),
 });
 
 export function getAttributeValuesFromUpdates<T>(
@@ -177,24 +167,40 @@ function getSetExpression<T>(updates: SetUpdates<T>): string {
     ...attributeUpdates,
     ...conditionalUpdates,
   }).map(
-    ([k, v]) =>
-      `${k} = ${
-        Object.keys(conditionalUpdates).includes(k)
-          ? `if_not_exists(${k},${v})`
-          : v
+    ([key, value]) =>
+      `${key} = ${
+        Object.keys(conditionalUpdates).includes(key)
+          ? `if_not_exists(${key},${value})`
+          : value
       }`
   );
 
   return `SET ${expressions.join(', ')}`;
 }
 
+function getRemoveExpression<T>(updates: RemoveUpdates<T>): string {
+  const updateMap = Object.entries(updates).reduce(
+    (acc, [key, value]) => ({
+      ...acc,
+      ...getUpdateMap(key, value),
+    }),
+    {}
+  );
+
+  return `REMOVE ${Object.keys(updateMap).join(', ')}`;
+}
+
 export function getUpdateExpression<T>(updates: UpdateMap<T>): string {
   const expressions = [];
 
   if (updates.set) {
-    const setExpression = getSetExpression(updates.set);
+    const expression = getSetExpression(updates.set);
+    expressions.push(expression);
+  }
 
-    expressions.push(setExpression);
+  if (updates.remove) {
+    const expression = getRemoveExpression(updates.remove);
+    expressions.push(expression);
   }
 
   return expressions.join(', ');

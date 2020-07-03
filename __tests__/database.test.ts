@@ -546,114 +546,175 @@ describe('put', () => {
 });
 
 describe('update', () => {
-  it('sets attributes on an existing item in the database', async () => {
-    expect.assertions(3);
+  describe('SET updates', () => {
+    it('sets attributes on an existing item in the database', async () => {
+      expect.assertions(3);
 
-    const before = await database.scan();
-    const [user] = before;
+      const before = await database.scan();
+      const [user] = before;
 
-    const result = await database.update(
-      { type: user.type, id: user.id },
-      {
-        set: [{ age: user.age + 1, name: 'TESTING', email: 'email@test.com' }],
-      }
-    );
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          set: [
+            { age: user.age + 1, name: 'TESTING', email: 'email@test.com' },
+          ],
+        }
+      );
 
-    expect(result).toEqual({
-      ...user,
-      name: 'TESTING',
-      age: user.age + 1,
-      email: 'email@test.com',
+      expect(result).toEqual({
+        ...user,
+        name: 'TESTING',
+        age: user.age + 1,
+        email: 'email@test.com',
+      });
+
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
     });
 
-    const after = await database.scan();
-    expect(after).not.toContainEqual(user);
-    expect(after).toContainEqual(result);
-  });
+    it("only performs conditional SET updates for keys that don't exist on an existing item in the database", async () => {
+      expect.assertions(3);
 
-  it("only performs conditional SET updates for keys that don't exist on an existing item in the database", async () => {
-    expect.assertions(3);
+      const before = await database.scan();
+      const [user] = before;
 
-    const before = await database.scan();
-    const [user] = before;
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          set: [
+            { age: user.age + 1 },
+            { name: 'TESTING', email: 'email@test.com' },
+          ],
+        }
+      );
 
-    const result = await database.update(
-      { type: user.type, id: user.id },
-      {
-        set: [
-          { age: user.age + 1 },
-          { name: 'TESTING', email: 'email@test.com' },
-        ],
-      }
-    );
+      const expected = {
+        ...user,
+        age: user.age + 1,
+        name: user.name,
+        email: 'email@test.com',
+      };
 
-    const expected = {
-      ...user,
-      age: user.age + 1,
-      name: user.name,
-      email: 'email@test.com',
-    };
+      expect(result).toEqual(expected);
 
-    expect(result).toEqual(expected);
-
-    const after = await database.scan();
-    expect(after).not.toContainEqual(user);
-    expect(after).toContainEqual(result);
-  });
-
-  it('sets nested attributes', async () => {
-    expect.assertions(3);
-
-    const before = await database.scan();
-    const [user] = before;
-
-    const result = await database.update(
-      { type: user.type, id: user.id },
-      {
-        set: [{ address: { street: `${user.id} boulevard` } }],
-      }
-    );
-
-    expect(result).toEqual({
-      ...user,
-      address: {
-        ...user.address,
-        street: `${user.id} boulevard`,
-      },
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
     });
 
-    const after = await database.scan();
-    expect(after).not.toContainEqual(user);
-    expect(after).toContainEqual(result);
-  });
+    it('sets nested attributes', async () => {
+      expect.assertions(3);
 
-  it("conditionally sets nested attributes that don't exist", async () => {
-    expect.assertions(3);
+      const before = await database.scan();
+      const [user] = before;
 
-    const before = await database.scan();
-    const [user] = before;
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          set: [{ address: { street: `${user.id} boulevard` } }],
+        }
+      );
 
-    const result = await database.update(
-      { type: user.type, id: user.id },
-      {
-        set: [
-          { address: { postcode: 'POSTCODE!!!!' } },
-          { address: { street: `${user.id} boulevard`, city: 'Manchester' } },
-        ],
-      }
-    );
+      expect(result).toEqual({
+        ...user,
+        address: {
+          ...user.address,
+          street: `${user.id} boulevard`,
+        },
+      });
 
-    expect(result).toEqual({
-      ...user,
-      address: {
-        ...user.address,
-        postcode: 'POSTCODE!!!!',
-        city: 'Manchester',
-      },
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
     });
 
-    const after = await database.scan();
-    expect(after).not.toContainEqual(user);
-    expect(after).toContainEqual(result);
+    it("conditionally sets nested attributes that don't exist", async () => {
+      expect.assertions(3);
+
+      const before = await database.scan();
+      const [user] = before;
+
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          set: [
+            {
+              address: {
+                street: `rue de ${user.id} `,
+                postcode: 'POSTCODE!!!!',
+              },
+            },
+            { address: { street: `${user.id} boulevard`, city: 'Manchester' } },
+          ],
+        }
+      );
+
+      expect(result).toEqual({
+        ...user,
+        address: {
+          ...user.address,
+          postcode: 'POSTCODE!!!!',
+          city: 'Manchester',
+        },
+      });
+
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
+    });
+  });
+
+  describe('REMOVE updates', () => {
+    it('removes attributes from an existing item in the database', async () => {
+      expect.assertions(3);
+
+      const before = await database.scan();
+      const [user] = before;
+
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          remove: { age: true, email: true },
+        }
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { age, email, ...expected } = user;
+
+      expect(result).toEqual(expected);
+
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
+    });
+
+    xit('removes nested attributes from an existing item in the database', async () => {
+      expect.assertions(3);
+
+      const before = await database.scan();
+      const [user] = before;
+
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          remove: { address: { street: true } },
+        }
+      );
+      const {
+        address: { street, ...address }, // eslint-disable-line @typescript-eslint/no-unused-vars
+        ...expected
+      } = user;
+
+      expect(result).toEqual({
+        ...expected,
+        address,
+      });
+
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
+    });
   });
 });

@@ -191,3 +191,61 @@ describe('SET expressions', () => {
     });
   });
 });
+
+describe('REMOVE expressions', () => {
+  describe('plain expressions', () => {
+    const updates: UpdateMap<TestType> = {
+      remove: { a: true, b: true },
+    };
+
+    describe('getAttributeNamesFromUpdates', () => {
+      it('gets attribute names from set expressions', () => {
+        expect(getAttributeNamesFromUpdates(updates)).toEqual({
+          '#a': 'a',
+          '#b': 'b',
+        });
+      });
+    });
+
+    describe('getAttributeValuesFromUpdates', () => {
+      it('returns an empty object', () => {
+        expect(getAttributeValuesFromUpdates(updates)).toEqual({});
+      });
+    });
+
+    describe('getUpdateExpression', () => {
+      it('parses SET expressions', () => {
+        expect(getUpdateExpression(updates)).toEqual('REMOVE #a, #b');
+      });
+    });
+  });
+
+  describe('nested expressions', () => {
+    const updates: UpdateMap<TestType> = {
+      remove: { d: { e: true, g: { h: true } } },
+    };
+
+    describe('getAttributeNamesFromUpdates', () => {
+      it('gets attribute names from set expressions', () => {
+        expect(getAttributeNamesFromUpdates(updates)).toEqual({
+          '#d': 'd',
+          '#e': 'e',
+          '#g': 'g',
+          '#h': 'h',
+        });
+      });
+    });
+
+    describe('getAttributeValuesFromUpdates', () => {
+      it('returns an empty object', () => {
+        expect(getAttributeValuesFromUpdates(updates)).toEqual({});
+      });
+    });
+
+    describe('getUpdateExpression', () => {
+      it('parses SET expressions', () => {
+        expect(getUpdateExpression(updates)).toEqual('REMOVE #d.#e, #d.#g.#h');
+      });
+    });
+  });
+});
