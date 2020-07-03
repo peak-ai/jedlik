@@ -690,7 +690,7 @@ describe('update', () => {
       expect(after).toContainEqual(result);
     });
 
-    xit('removes nested attributes from an existing item in the database', async () => {
+    it('removes nested attributes from an existing item in the database', async () => {
       expect.assertions(3);
 
       const before = await database.scan();
