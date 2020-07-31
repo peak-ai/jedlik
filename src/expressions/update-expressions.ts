@@ -16,9 +16,14 @@ type RemoveUpdates<T> = {
   [P in keyof T]?: RemoveUpdates<T[P]> | true;
 };
 
+type AddUpdates<T> = {
+  [P in keyof T]?: number;
+};
+
 export type UpdateMap<T> = {
   set?: SetUpdates<T>;
   remove?: RemoveUpdates<T>;
+  add?: AddUpdates<T>;
 };
 
 function getNameKey(key: string): string {
@@ -60,7 +65,13 @@ function getUpdateMap(
 }
 
 function getValueKey(key: string, value: unknown): string {
-  return `:${encode(`${key}=${value}`)}`;
+  let v = value;
+
+  if (Array.isArray(value)) {
+    v = JSON.stringify(value);
+  }
+
+  return `:${encode(`${key}=${v}`)}`;
 }
 
 function getValueMap(key: string, value: unknown): ExpressionAttributeValueMap {
@@ -103,6 +114,10 @@ export function getAttributeNamesFromUpdates<T>(
     names = Object.entries(updates.remove).reduce(toAttributeNameMap, names);
   }
 
+  if (updates.add) {
+    names = Object.entries(updates.add).reduce(toAttributeNameMap, names);
+  }
+
   return names;
 }
 
@@ -127,6 +142,10 @@ export function getAttributeValuesFromUpdates<T>(
     if (conditionals) {
       values = Object.entries(conditionals).reduce(toAttributeValueMap, values);
     }
+  }
+
+  if (updates.add) {
+    values = Object.entries(updates.add).reduce(toAttributeValueMap, values);
   }
 
   values = Object.entries(values).reduce(
@@ -190,6 +209,22 @@ function getRemoveExpression<T>(updates: RemoveUpdates<T>): string {
   return `REMOVE ${Object.keys(updateMap).join(', ')}`;
 }
 
+function getAddExpression<T>(updates: AddUpdates<T>): string {
+  const updateMap = Object.entries(updates).reduce(
+    (acc, [key, value]) => ({
+      ...acc,
+      ...getUpdateMap(key, value),
+    }),
+    {}
+  );
+
+  const expressions = Object.entries(updateMap).map(
+    ([key, value]) => `${key} ${value}`
+  );
+
+  return `ADD ${expressions.join(', ')}`;
+}
+
 export function getUpdateExpression<T>(updates: UpdateMap<T>): string {
   const expressions = [];
 
@@ -200,6 +235,11 @@ export function getUpdateExpression<T>(updates: UpdateMap<T>): string {
 
   if (updates.remove) {
     const expression = getRemoveExpression(updates.remove);
+    expressions.push(expression);
+  }
+
+  if (updates.add) {
+    const expression = getAddExpression(updates.add);
     expressions.push(expression);
   }
 

@@ -199,7 +199,7 @@ describe('REMOVE expressions', () => {
     };
 
     describe('getAttributeNamesFromUpdates', () => {
-      it('gets attribute names from set expressions', () => {
+      it('gets attribute names from REMOVE expressions', () => {
         expect(getAttributeNamesFromUpdates(updates)).toEqual({
           '#a': 'a',
           '#b': 'b',
@@ -214,7 +214,7 @@ describe('REMOVE expressions', () => {
     });
 
     describe('getUpdateExpression', () => {
-      it('parses SET expressions', () => {
+      it('parses REMOVE expressions', () => {
         expect(getUpdateExpression(updates)).toEqual('REMOVE #a, #b');
       });
     });
@@ -226,7 +226,7 @@ describe('REMOVE expressions', () => {
     };
 
     describe('getAttributeNamesFromUpdates', () => {
-      it('gets attribute names from set expressions', () => {
+      it('gets attribute names from REMOVE expressions', () => {
         expect(getAttributeNamesFromUpdates(updates)).toEqual({
           '#d': 'd',
           '#e': 'e',
@@ -243,8 +243,40 @@ describe('REMOVE expressions', () => {
     });
 
     describe('getUpdateExpression', () => {
-      it('parses SET expressions', () => {
+      it('parses REMOVE expressions', () => {
         expect(getUpdateExpression(updates)).toEqual('REMOVE #d.#e, #d.#g.#h');
+      });
+    });
+  });
+});
+
+describe('ADD expressions', () => {
+  describe('plain expressions', () => {
+    const updates: UpdateMap<TestType> = {
+      add: { a: 9 },
+    };
+
+    describe('getAttributeNamesFromUpdates', () => {
+      it('gets attribute names from ADD expressions', () => {
+        expect(getAttributeNamesFromUpdates(updates)).toEqual({
+          '#a': 'a',
+        });
+      });
+    });
+
+    describe('getAttributeValuesFromUpdates', () => {
+      it('gets attribute values from ADD operations', () => {
+        expect(getAttributeValuesFromUpdates(updates)).toEqual({
+          [`:${encode('a=9')}`]: 9,
+        });
+      });
+    });
+
+    describe('getUpdateExpression', () => {
+      it('parses ADD expressions', () => {
+        expect(getUpdateExpression(updates)).toEqual(
+          `ADD #a :${encode('a=9')}`
+        );
       });
     });
   });

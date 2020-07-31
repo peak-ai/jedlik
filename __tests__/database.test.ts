@@ -17,6 +17,7 @@ interface User {
     postcode: string;
   };
   email?: string;
+  testsWritten?: number;
 }
 
 function generateUser(id: number): User {
@@ -680,7 +681,6 @@ describe('update', () => {
         }
       );
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { age, email, ...expected } = user;
 
       expect(result).toEqual(expected);
@@ -703,7 +703,7 @@ describe('update', () => {
         }
       );
       const {
-        address: { street, ...address }, // eslint-disable-line @typescript-eslint/no-unused-vars
+        address: { street, ...address },
         ...expected
       } = user;
 
@@ -717,4 +717,53 @@ describe('update', () => {
       expect(after).toContainEqual(result);
     });
   });
+
+  describe('ADD updates', () => {
+    it('adds number attributes to an existing item in the database', async () => {
+      expect.assertions(3);
+
+      const before = await database.scan();
+      const [user] = before;
+
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          add: { testsWritten: 139 },
+        }
+      );
+
+      const expected = { ...user, testsWritten: 139 };
+
+      expect(result).toEqual(expected);
+
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
+    });
+
+    it('adds a number to an existing attribute to an item in the database', async () => {
+      expect.assertions(3);
+
+      const before = await database.scan();
+      const [user] = before;
+
+      const result = await database.update(
+        { type: user.type, id: user.id },
+        {
+          add: { age: 13 },
+        }
+      );
+
+      const expected = { ...user, age: user.age + 13 };
+
+      expect(result).toEqual(expected);
+
+      const after = await database.scan();
+      expect(after).not.toContainEqual(user);
+      expect(after).toContainEqual(result);
+    });
+  });
 });
+
+// TODO: add support for nested add statements
+// TODO: add some tests with array properties
