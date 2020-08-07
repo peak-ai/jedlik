@@ -92,3 +92,7 @@ export class DocumentClient {
     return this.documentClient.update(params).promise();
   }
 }
+
+export function createSet(list: DynamoDBList): DynamoDBSet {
+  return new DocumentClient().createSet(list);
+}

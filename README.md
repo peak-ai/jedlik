@@ -39,7 +39,7 @@ await user.save(); // write the data to the database
 
 user.set({ name: 'Ronak' }); // update an attribute locally
 
-console.log(user.get('name')) // get an attribute
+console.log(user.get('name')); // get an attribute
 
 Users.on('save', (u) => {
   console.log(u.toObject()); // get the attributes as a plain object
@@ -61,7 +61,7 @@ const admins = await Users.scan({
 
 ### `class Model<T>`
 
-#### `constructor(options: ModelOptions, config?: DatabaseOptions): Model<T>`
+#### `constructor(options: ModelOptions, config?: ClientOptions): Model<T>`
 
 Constructor function that creates a new `Model`.
 
@@ -158,7 +158,7 @@ A simple condition would look like this:
 const condition = { key: 'price', operator: '>', value: 10 };
 ```
 
-This says **"*do this thing if the price is greater than 10*"** - you could use it filter results in a query, or to prevent an item from being deleted or overwritten.
+This says **"_do this thing if the price is greater than 10_"** - you could use it filter results in a query, or to prevent an item from being deleted or overwritten.
 
 You can also get more complex, using logical groups:
 
@@ -176,7 +176,7 @@ const complexCondition = {
 };
 ```
 
-This says **"*do this thing if either a) the price is greater than 10, or b) the price is greater than 5 and the name is MyItem*"**
+This says **"_do this thing if either a) the price is greater than 10, or b) the price is greater than 5 and the name is MyItem_"**
 
 ## Roadmap
 

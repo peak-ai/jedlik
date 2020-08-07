@@ -1,11 +1,11 @@
 import { mocked } from 'ts-jest/utils';
 import { Attributes } from '../src/attributes';
-import { Database } from '../src/database';
+import { DynamoDBClient } from '../src/dynamodb-client';
 import { Document } from '../src/document';
 import { Events } from '../src/events';
 
 jest.mock('../src/attributes');
-jest.mock('../src/database');
+jest.mock('../src/dynamodb-client');
 jest.mock('../src/events');
 
 /* tslint:disable:variable-name */
@@ -13,7 +13,7 @@ const MockAttributes = mocked(Attributes);
 /* tslint:enable:variable-name */
 
 let subject: Document<any>;
-let db: Database<any>;
+let db: DynamoDBClient<any>;
 let events: Events<any>;
 let props: any;
 const schema = {
@@ -21,7 +21,7 @@ const schema = {
 };
 
 beforeEach(() => {
-  db = new Database('');
+  db = new DynamoDBClient('');
   events = new Events();
   props = jest.fn();
 });

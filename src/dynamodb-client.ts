@@ -8,6 +8,8 @@ import {
   ScanInput,
   UpdateInput,
   Key as DocumentClientKey,
+  DynamoDBList as DDBList,
+  DynamoDBSet as DDBSet,
 } from './document-client';
 
 import {
@@ -15,6 +17,9 @@ import {
   KeyExpressions,
   UpdateExpressions,
 } from './expressions';
+
+export type DynamoDBList = DDBList;
+export type DynamoDBSet = DDBSet;
 
 export interface ScanOptions<T> {
   filters?: ConditionExpressions.ConditionMap<T>;
@@ -45,9 +50,13 @@ export interface DeleteOptions<T> {
 
 export type Key<T> = Partial<T>;
 
-export type DatabaseOptions = DocumentClientOptions;
+export type ClientOptions = DocumentClientOptions;
 
-export class Database<T> {
+export class DynamoDBClient<T> {
+  static createSet(list: DynamoDBList): DynamoDBSet {
+    return new DocumentClient().createSet(list);
+  }
+
   private documentClient: DocumentClient;
 
   constructor(private tableName: string, config: DocumentClientOptions = {}) {
@@ -140,22 +149,17 @@ export class Database<T> {
     key: Key<T>,
     updates: UpdateExpressions.UpdateMap<T>
   ): Promise<T> {
+    const parser = new UpdateExpressions.UpdateExpressionParser(updates);
     const params: UpdateInput = {
       TableName: this.tableName,
       Key: key,
-      UpdateExpression: UpdateExpressions.getUpdateExpression(updates),
-      ExpressionAttributeNames: UpdateExpressions.getAttributeNamesFromUpdates(
-        updates
-      ),
+      UpdateExpression: parser.expression,
+      ExpressionAttributeNames: parser.expressionAttributeNames,
       ReturnValues: 'ALL_NEW',
     };
 
-    const ExpressionAttributeValues = UpdateExpressions.getAttributeValuesFromUpdates(
-      updates
-    );
-
-    if (Object.keys(ExpressionAttributeValues).length > 0) {
-      params.ExpressionAttributeValues = ExpressionAttributeValues;
+    if (Object.keys(parser.expressionAttributeValues).length > 0) {
+      params.ExpressionAttributeValues = parser.expressionAttributeValues;
     }
 
     const { Attributes } = await this.documentClient.update(params);

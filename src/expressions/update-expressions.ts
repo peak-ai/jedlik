@@ -1,247 +1,250 @@
+import crypto from 'crypto';
 import {
   ExpressionAttributeNameMap,
   ExpressionAttributeValueMap,
+  DynamoDBSet,
 } from '../document-client';
-import { encode } from './encode';
+
+type operation = 'SET' | 'REMOVE' | 'ADD' | 'DELETE';
+
+type Action = {
+  id: string;
+  operation: operation;
+  path: string[];
+  value: unknown;
+  conditional: boolean;
+};
 
 type DeepPartial<T> = {
-  [P in keyof T]?: DeepPartial<T[P]>;
+  [P in keyof T]?: DeepPartial<T[P]> | LiteralMap<T[P]>;
 };
 
 type SetUpdate<T> = DeepPartial<T>;
 
-type SetUpdates<T> = [SetUpdate<T>, SetUpdate<T>?];
-
-type RemoveUpdates<T> = {
-  [P in keyof T]?: RemoveUpdates<T[P]> | true;
+type RemoveUpdate<T> = {
+  [P in keyof T]?: RemoveUpdate<T[P]> | true;
 };
 
-type AddUpdates<T> = {
-  [P in keyof T]?: number;
+type AddUpdate<T> = {
+  [P in keyof T]?: number | DynamoDBSet;
 };
+
+type DeleteUpdate<T> = {
+  [P in keyof T]?: DynamoDBSet;
+};
+
+type Update<T> = SetUpdate<T> | AddUpdate<T> | RemoveUpdate<T>;
 
 export type UpdateMap<T> = {
-  set?: SetUpdates<T>;
-  remove?: RemoveUpdates<T>;
-  add?: AddUpdates<T>;
+  set?: [SetUpdate<T>, SetUpdate<T>?];
+  remove?: RemoveUpdate<T>;
+  add?: AddUpdate<T>;
+  delete?: DeleteUpdate<T>;
 };
 
-function getNameKey(key: string): string {
-  return `#${key}`;
+export type Shape<T> = T | LiteralMap<T>;
+
+export function Literal<T>(values: T): LiteralMap<T> {
+  return new LiteralMap(values);
 }
 
-function getNameKeys(key: string, value: unknown): ExpressionAttributeNameMap {
-  const keys = { [getNameKey(key)]: key };
-
-  if (Object.getPrototypeOf(value) === Object.prototype) {
-    return Object.entries(value as Record<string, unknown>).reduce(
-      (acc, [k, v]) => ({
-        ...acc,
-        ...getNameKeys(k, v),
-      }),
-      keys
-    );
-  }
-
-  return keys;
+class LiteralMap<T> {
+  constructor(public values: T) {}
 }
 
-function getUpdateMap(
+const id = (): string => crypto.randomBytes(20).toString('hex');
+
+const toAction = <T>(
+  path: string[],
+  value: unknown,
+  operation: operation,
+  conditional = false
+): Action => ({
+  id: id(),
+  operation,
+  conditional,
+  path, // if it's nested we need to get the path recursively
+  value, // if its nested we need to get to the end of the line
+});
+
+type pathValuePairs = [string[], unknown][];
+
+const getPathValuePairs = (
   key: string,
-  value: unknown
-): ExpressionAttributeValueMap {
+  value: unknown,
+  path: string[] = []
+): pathValuePairs => {
   if (Object.getPrototypeOf(value) === Object.prototype) {
     return Object.entries(value as Record<string, unknown>).reduce(
-      (acc, [k, v]) => ({
-        ...acc,
-        ...getUpdateMap(`${key}.${k}`, v),
-      }),
-      {}
+      (acc, [k, value]) => {
+        return [...acc, ...getPathValuePairs(k, value, path.concat(key))];
+      },
+      [] as pathValuePairs
     );
-  }
-  return {
-    [key.split('.').map(getNameKey).join('.')]: getValueKey(key, value),
-  };
-}
-
-function getValueKey(key: string, value: unknown): string {
-  let v = value;
-
-  if (Array.isArray(value)) {
-    v = JSON.stringify(value);
+  } else if (value instanceof LiteralMap) {
+    return [[path.concat(key), value.values]];
   }
 
-  return `:${encode(`${key}=${v}`)}`;
-}
+  return [[path.concat(key), value]];
+};
 
-function getValueMap(key: string, value: unknown): ExpressionAttributeValueMap {
-  if (Object.getPrototypeOf(value) === Object.prototype) {
-    return Object.entries(value as Record<string, unknown>).reduce(
-      (acc, [k, v]) => ({
-        ...acc,
-        ...getValueMap(`${key}.${k}`, v),
-      }),
-      {}
+const getActions = <T>(
+  update: Update<T>,
+  operation: operation,
+  conditional = false
+): Action[] => {
+  return Object.entries(update).reduce((actions, [key, value]) => {
+    const pathValues = getPathValuePairs(key, value);
+    return actions.concat(
+      pathValues.map(([path, value]) =>
+        toAction(path, value, operation, conditional)
+      )
     );
-  }
-  return { [key]: value };
-}
+  }, [] as Action[]);
+};
 
-const toAttributeNameMap = (
-  acc: ExpressionAttributeNameMap,
-  [key, value]: [string, unknown]
-): ExpressionAttributeNameMap => ({
-  ...acc,
-  ...getNameKeys(key, value),
-});
-
-export function getAttributeNamesFromUpdates<T>(
-  updates: UpdateMap<T>
-): ExpressionAttributeNameMap {
-  let names: ExpressionAttributeNameMap = {};
+const toActions = <T>(updates: UpdateMap<T>): Action[] => {
+  let actions: Action[] = [];
 
   if (updates.set) {
-    const [attributes, conditionals] = updates.set;
-
-    names = Object.entries(attributes).reduce(toAttributeNameMap, names);
+    const [sets, conditionals] = updates.set;
+    let setActions = getActions(sets, 'SET');
 
     if (conditionals) {
-      names = Object.entries(conditionals).reduce(toAttributeNameMap, names);
+      const conditionalActions = getActions(conditionals, 'SET', true);
+      setActions = setActions.filter(
+        (a) =>
+          !conditionalActions.some((c) => c.path.join('.') === a.path.join('.'))
+      );
+
+      actions = actions.concat(setActions);
+      actions = actions.concat(conditionalActions);
+    } else {
+      actions = actions.concat(setActions);
     }
   }
 
   if (updates.remove) {
-    names = Object.entries(updates.remove).reduce(toAttributeNameMap, names);
+    actions = actions.concat(getActions(updates.remove, 'REMOVE'));
   }
 
   if (updates.add) {
-    names = Object.entries(updates.add).reduce(toAttributeNameMap, names);
+    actions = actions.concat(getActions(updates.add, 'ADD'));
   }
 
-  return names;
-}
-
-const toAttributeValueMap = (
-  acc: ExpressionAttributeNameMap,
-  [key, value]: [string, unknown]
-): ExpressionAttributeNameMap => ({
-  ...acc,
-  ...getValueMap(key, value),
-});
-
-export function getAttributeValuesFromUpdates<T>(
-  updates: UpdateMap<T>
-): ExpressionAttributeValueMap {
-  let values = {};
-
-  if (updates.set) {
-    const [attributes, conditionals] = updates.set;
-
-    values = Object.entries(attributes).reduce(toAttributeValueMap, values);
-
-    if (conditionals) {
-      values = Object.entries(conditionals).reduce(toAttributeValueMap, values);
-    }
+  if (updates.delete) {
+    actions = actions.concat(getActions(updates.delete, 'DELETE'));
   }
 
-  if (updates.add) {
-    values = Object.entries(updates.add).reduce(toAttributeValueMap, values);
+  return actions;
+};
+
+const toName = (key: string): string => `#${key}`;
+const toValue = (key: string): string => `:${key}`;
+
+export class UpdateExpressionParser<T> {
+  private actions: Action[];
+
+  constructor(updates: UpdateMap<T>) {
+    this.actions = toActions(updates);
   }
 
-  values = Object.entries(values).reduce(
-    (acc, [k, v]) => ({
-      ...acc,
-      [getValueKey(k, v)]: v,
-    }),
-    {}
-  );
-
-  return values;
-}
-
-function getSetExpression<T>(updates: SetUpdates<T>): string {
-  const [attributes, conditionals] = updates;
-
-  const attributeUpdates = Object.entries(attributes).reduce(
-    (acc, [key, value]) => ({
-      ...acc,
-      ...getUpdateMap(key, value),
-    }),
-    {}
-  );
-
-  let conditionalUpdates = {};
-
-  if (conditionals) {
-    conditionalUpdates = Object.entries(conditionals).reduce(
-      (acc, [key, value]) => ({
-        ...acc,
-        ...getUpdateMap(key, value),
-      }),
+  public get expressionAttributeNames(): ExpressionAttributeNameMap {
+    return this.actions.reduce(
+      (acc, action) =>
+        action.path.reduce(
+          (a, k) => ({
+            ...a,
+            [`#${k}`]: k,
+          }),
+          acc
+        ),
       {}
     );
   }
 
-  const expressions = Object.entries({
-    ...attributeUpdates,
-    ...conditionalUpdates,
-  }).map(
-    ([key, value]) =>
-      `${key} = ${
-        Object.keys(conditionalUpdates).includes(key)
-          ? `if_not_exists(${key},${value})`
-          : value
-      }`
-  );
-
-  return `SET ${expressions.join(', ')}`;
-}
-
-function getRemoveExpression<T>(updates: RemoveUpdates<T>): string {
-  const updateMap = Object.entries(updates).reduce(
-    (acc, [key, value]) => ({
-      ...acc,
-      ...getUpdateMap(key, value),
-    }),
-    {}
-  );
-
-  return `REMOVE ${Object.keys(updateMap).join(', ')}`;
-}
-
-function getAddExpression<T>(updates: AddUpdates<T>): string {
-  const updateMap = Object.entries(updates).reduce(
-    (acc, [key, value]) => ({
-      ...acc,
-      ...getUpdateMap(key, value),
-    }),
-    {}
-  );
-
-  const expressions = Object.entries(updateMap).map(
-    ([key, value]) => `${key} ${value}`
-  );
-
-  return `ADD ${expressions.join(', ')}`;
-}
-
-export function getUpdateExpression<T>(updates: UpdateMap<T>): string {
-  const expressions = [];
-
-  if (updates.set) {
-    const expression = getSetExpression(updates.set);
-    expressions.push(expression);
+  public get expressionAttributeValues(): ExpressionAttributeValueMap {
+    return this.actions
+      .filter((action) => action.operation !== 'REMOVE')
+      .reduce(
+        (acc, action) => ({
+          ...acc,
+          [`:${action.id}`]: action.value,
+        }),
+        {}
+      );
   }
 
-  if (updates.remove) {
-    const expression = getRemoveExpression(updates.remove);
-    expressions.push(expression);
-  }
+  public get expression(): string {
+    const sets: string[] = [];
+    const removes: string[] = [];
+    const adds: string[] = [];
+    const deletes: string[] = [];
 
-  if (updates.add) {
-    const expression = getAddExpression(updates.add);
-    expressions.push(expression);
-  }
+    this.actions.forEach((action) => {
+      const path = action.path.map(toName).join('.');
+      const value = toValue(action.id);
+      switch (action.operation) {
+        case 'SET': {
+          if (action.conditional) {
+            sets.push(`${path} = if_not_exists(${path}, ${value})`);
+          } else {
+            sets.push(`${path} = ${value}`);
+          }
+          break;
+        }
+        case 'REMOVE': {
+          removes.push(path);
+          break;
+        }
+        case 'ADD': {
+          adds.push(`${path} ${value}`);
+          break;
+        }
+        case 'DELETE': {
+          deletes.push(`${path} ${value}`);
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    });
 
-  return expressions.join(', ');
+    return [
+      sets.length ? `SET ${sets.join(', ')} ` : '',
+      removes.length ? `REMOVE ${removes.join(', ')} ` : '',
+      adds.length ? `ADD ${adds.join(', ')} ` : '',
+      deletes.length ? `DELETE ${deletes.join(', ')}` : '',
+    ]
+      .join('')
+      .trim();
+  }
 }
+
+// type calc = (n: number) => number;
+
+// const fibonacci: calc = (n) => {
+//   const cache = [0, 1];
+
+//   const f: calc = (n) => {
+//     if (cache.length > n) {
+//       return cache[n];
+//     } else {
+//       const x = f(n - 1) + f(n - 2);
+//       cache.push(x);
+//       return x;
+//     }
+//   };
+
+//   return f(n);
+// };
+
+// const fibonacci = (n: number): number => {
+//   if (n < 2) return n;
+//   return fibonacci(n - 1) + fibonacci(n - 2);
+// };
+
+// console.time('fib');
+// console.log(fibonacci(102));
+// console.timeEnd('fib');

@@ -1,5 +1,5 @@
 import { Attributes } from './attributes';
-import { Database, PutOptions } from './database';
+import { DynamoDBClient, PutOptions } from './dynamodb-client';
 import { Events } from './events';
 
 type ValidationError = {
@@ -18,12 +18,12 @@ export interface Schema<T> {
 
 export class Document<T> {
   private attributes: Attributes<T>;
-  private db: Database<T>;
+  private db: DynamoDBClient<T>;
   private events: Events<Document<T>>;
   private schema: Schema<T>;
 
   constructor(
-    db: Database<T>,
+    db: DynamoDBClient<T>,
     events: Events<Document<T>>,
     schema: Schema<T>,
     props: T
