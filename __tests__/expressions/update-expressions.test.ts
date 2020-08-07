@@ -3,7 +3,7 @@ import {
   UpdateMap,
   Literal,
   Shape,
-} from '../../src/expressions/update-expression-parser';
+} from '../../src/expressions/update-expressions';
 import { DynamoDBSet, createSet } from '../../src/document-client';
 
 type TestType = {
