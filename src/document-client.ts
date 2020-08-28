@@ -11,10 +11,15 @@ export type DeleteInput = DynamoDB.DocumentClient.DeleteItemInput;
 export type PutInput = DynamoDB.DocumentClient.PutItemInput;
 export type QueryInput = DynamoDB.DocumentClient.QueryInput;
 export type ScanInput = DynamoDB.DocumentClient.ScanInput;
-export type UpdateItemInput = DynamoDB.DocumentClient.UpdateItemInput;
+export type UpdateInput = DynamoDB.DocumentClient.UpdateItemInput;
 export type ExpressionAttributeNameMap = DynamoDB.DocumentClient.ExpressionAttributeNameMap;
 export type ExpressionAttributeValueMap = DynamoDB.DocumentClient.ExpressionAttributeValueMap;
 export type KeyConditions = DynamoDB.DocumentClient.KeyConditions;
+export type DynamoDBSet = DynamoDB.DocumentClient.DynamoDbSet;
+export type DynamoDBList =
+  | number[]
+  | string[]
+  | DynamoDB.DocumentClient.binaryType[];
 
 export class DocumentClient {
   private documentClient: DynamoDB.DocumentClient;
@@ -35,9 +40,7 @@ export class DocumentClient {
     return this.documentClient.batchWrite(params).promise();
   }
 
-  public createSet(
-    list: number[] | string[] | DynamoDB.DocumentClient.binaryType[]
-  ): DynamoDB.DocumentClient.DynamoDbSet {
+  public createSet(list: DynamoDBList): DynamoDBSet {
     return this.documentClient.createSet(list);
   }
 
@@ -88,4 +91,8 @@ export class DocumentClient {
   ): Promise<DynamoDB.DocumentClient.UpdateItemOutput> {
     return this.documentClient.update(params).promise();
   }
+}
+
+export function createSet(list: DynamoDBList): DynamoDBSet {
+  return new DocumentClient().createSet(list);
 }

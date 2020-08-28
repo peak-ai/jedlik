@@ -6,42 +6,53 @@ import {
   PutInput,
   QueryInput,
   ScanInput,
+  UpdateInput,
   Key as DocumentClientKey,
+  DynamoDBList as DDBList,
+  DynamoDBSet as DDBSet,
 } from './document-client';
-import { ConditionExpressions, KeyExpressions } from './expressions';
+
+import {
+  ConditionExpressions,
+  KeyExpressions,
+  UpdateExpressions,
+} from './expression-parsers';
+
+export type DynamoDBList = DDBList;
+export type DynamoDBSet = DDBSet;
 
 export interface ScanOptions<T> {
-  filters?: ConditionExpressions.ConditionMap<T>;
+  filters?: ConditionExpressions.Conditions<T>;
   index?: IndexName;
   limit?: number;
 }
 
 export interface QueryOptions<T> {
-  filters?: ConditionExpressions.ConditionMap<T>;
+  filters?: ConditionExpressions.Conditions<T>;
   index?: IndexName;
   limit?: number;
   sort?: 'asc' | 'desc';
 }
 
 export interface FirstOptions<T> {
-  filters?: ConditionExpressions.ConditionMap<T>;
+  filters?: ConditionExpressions.Conditions<T>;
   index?: IndexName;
   sort?: 'asc' | 'desc';
 }
 
 export interface PutOptions<T> {
-  conditions?: ConditionExpressions.ConditionMap<T>;
+  conditions?: ConditionExpressions.Conditions<T>;
 }
 
 export interface DeleteOptions<T> {
-  conditions?: ConditionExpressions.ConditionMap<T>;
+  conditions?: ConditionExpressions.Conditions<T>;
 }
 
 export type Key<T> = Partial<T>;
 
-export type DatabaseOptions = DocumentClientOptions;
+export type ClientOptions = DocumentClientOptions;
 
-export class Database<T> {
+export class DynamoDBClient<T> {
   private documentClient: DocumentClient;
 
   constructor(private tableName: string, config: DocumentClientOptions = {}) {
@@ -95,15 +106,10 @@ export class Database<T> {
     };
 
     if (options.conditions) {
-      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
-        options.conditions
-      );
-      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
-        options.conditions
-      );
-      params.ConditionExpression = ConditionExpressions.getConditionExpression(
-        options.conditions
-      );
+      const parser = new ConditionExpressions.Parser(options.conditions);
+      params.ExpressionAttributeNames = parser.expressionAttributeNames;
+      params.ExpressionAttributeValues = parser.expressionAttributeValues;
+      params.ConditionExpression = parser.expression;
     }
 
     await this.documentClient.delete(params);
@@ -116,18 +122,35 @@ export class Database<T> {
     };
 
     if (options.conditions) {
-      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
-        options.conditions
-      );
-      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
-        options.conditions
-      );
-      params.ConditionExpression = ConditionExpressions.getConditionExpression(
-        options.conditions
-      );
+      const parser = new ConditionExpressions.Parser(options.conditions);
+      params.ExpressionAttributeNames = parser.expressionAttributeNames;
+      params.ExpressionAttributeValues = parser.expressionAttributeValues;
+      params.ConditionExpression = parser.expression;
     }
 
     await this.documentClient.put(params);
+  }
+
+  public async update(
+    key: Key<T>,
+    updates: UpdateExpressions.UpdateMap<T>
+  ): Promise<T> {
+    const parser = new UpdateExpressions.Parser(updates);
+    const params: UpdateInput = {
+      TableName: this.tableName,
+      Key: key,
+      UpdateExpression: parser.expression,
+      ExpressionAttributeNames: parser.expressionAttributeNames,
+      ReturnValues: 'ALL_NEW',
+    };
+
+    if (Object.keys(parser.expressionAttributeValues).length > 0) {
+      params.ExpressionAttributeValues = parser.expressionAttributeValues;
+    }
+
+    const { Attributes } = await this.documentClient.update(params);
+
+    return Attributes as T;
   }
 
   private async recursiveScan(
@@ -143,15 +166,10 @@ export class Database<T> {
     }
 
     if (options.filters) {
-      params.ExpressionAttributeNames = ConditionExpressions.getAttributeNamesFromConditions(
-        options.filters
-      );
-      params.ExpressionAttributeValues = ConditionExpressions.getAttributeValuesFromConditions(
-        options.filters
-      );
-      params.FilterExpression = ConditionExpressions.getConditionExpression(
-        options.filters
-      );
+      const parser = new ConditionExpressions.Parser(options.filters);
+      params.ExpressionAttributeNames = parser.expressionAttributeNames;
+      params.ExpressionAttributeValues = parser.expressionAttributeValues;
+      params.FilterExpression = parser.expression;
     }
 
     if (options.limit && options.limit > 0) {
@@ -183,10 +201,11 @@ export class Database<T> {
     options: QueryOptions<T> = {},
     lastKey?: DocumentClientKey
   ): Promise<T[]> {
+    const keyParser = new KeyExpressions.Parser(key);
     const params: QueryInput = {
-      ExpressionAttributeNames: KeyExpressions.getAttributeNamesFromKey(key),
-      ExpressionAttributeValues: KeyExpressions.getAttributeValuesFromKey(key),
-      KeyConditionExpression: KeyExpressions.getKeyConditionExpression(key),
+      ExpressionAttributeNames: keyParser.expressionAttributeNames,
+      ExpressionAttributeValues: keyParser.expressionAttributeValues,
+      KeyConditionExpression: keyParser.expression,
       TableName: this.tableName,
     };
 
@@ -195,19 +214,16 @@ export class Database<T> {
     }
 
     if (options.filters) {
+      const parser = new ConditionExpressions.Parser(options.filters);
       Object.assign(
         params.ExpressionAttributeNames,
-        ConditionExpressions.getAttributeNamesFromConditions(options.filters)
+        parser.expressionAttributeNames
       );
-
       Object.assign(
         params.ExpressionAttributeValues,
-        ConditionExpressions.getAttributeValuesFromConditions(options.filters)
+        parser.expressionAttributeValues
       );
-
-      params.FilterExpression = ConditionExpressions.getConditionExpression(
-        options.filters
-      );
+      params.FilterExpression = parser.expression;
     }
 
     if (options.sort) {
