@@ -1,9 +1,9 @@
 import {
-  UpdateExpressionParser,
+  Parser,
   UpdateMap,
   Literal,
   Shape,
-} from '../../src/expressions/update-expressions';
+} from '../../src/expression-parsers/updates';
 import { DynamoDBSet, createSet } from '../../src/document-client';
 
 type TestType = {
@@ -34,7 +34,7 @@ describe('SET expressions', () => {
       set: [{ a: 2, b: '3', i }],
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets attribute names from set expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -58,6 +58,7 @@ describe('SET expressions', () => {
       expect(values).toContain('3');
       expect(values).toContain(i);
     });
+
     it('parses SET expressions', () => {
       const valueName = getValueName(
         Object.entries(parser.expressionAttributeValues)
@@ -77,7 +78,7 @@ describe('SET expressions', () => {
       ],
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets attribute names from set expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -120,7 +121,7 @@ describe('SET expressions', () => {
       set: [{ a: 2, d: { e: 'hello', f: 8, g: { h: false } } }],
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets nested attribute names from set expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -172,7 +173,7 @@ describe('SET expressions', () => {
       ],
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets nested attribute names from set expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -225,7 +226,7 @@ describe('SET expressions', () => {
       set: [{ d: Literal(d) }],
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets nested attribute names from set expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -263,7 +264,7 @@ describe('REMOVE expressions', () => {
       remove: { a: true, b: true },
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets attribute names from REMOVE expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -286,7 +287,7 @@ describe('REMOVE expressions', () => {
       remove: { d: { e: true, g: { h: true } } },
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets attribute names from REMOVE expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -313,7 +314,7 @@ describe('ADD expressions', () => {
       add: { a: 9 },
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets attribute names from ADD expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({
@@ -352,7 +353,7 @@ describe('DELETE expressions', () => {
       delete: { j },
     };
 
-    const parser = new UpdateExpressionParser(updates);
+    const parser = new Parser(updates);
 
     it('gets attribute names from DELETE expressions', () => {
       expect(parser.expressionAttributeNames).toEqual({

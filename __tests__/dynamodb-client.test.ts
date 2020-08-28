@@ -1,7 +1,6 @@
 import { Endpoint, DynamoDB } from 'aws-sdk';
 import { DynamoDBClient, DynamoDBSet } from '../src/dynamodb-client';
-import { createSet } from '../src/document-client';
-import { Literal } from '../src/expressions/update-expressions';
+import { createSet, Literal } from '../src';
 
 enum UserType {
   Admin = 'admin',

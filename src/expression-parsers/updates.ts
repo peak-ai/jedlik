@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import { id, toName, toValue } from './utils';
 import {
   ExpressionAttributeNameMap,
   ExpressionAttributeValueMap,
@@ -51,8 +51,6 @@ export function Literal<T>(values: T): LiteralMap<T> {
 class LiteralMap<T> {
   constructor(public values: T) {}
 }
-
-const id = (): string => crypto.randomBytes(20).toString('hex');
 
 const toAction = <T>(
   path: string[],
@@ -139,10 +137,7 @@ const toActions = <T>(updates: UpdateMap<T>): Action[] => {
   return actions;
 };
 
-const toName = (key: string): string => `#${key}`;
-const toValue = (key: string): string => `:${key}`;
-
-export class UpdateExpressionParser<T> {
+export class Parser<T> {
   private actions: Action[];
 
   constructor(updates: UpdateMap<T>) {
@@ -155,7 +150,7 @@ export class UpdateExpressionParser<T> {
         action.path.reduce(
           (a, k) => ({
             ...a,
-            [`#${k}`]: k,
+            [toName(k)]: k,
           }),
           acc
         ),
@@ -221,30 +216,3 @@ export class UpdateExpressionParser<T> {
       .trim();
   }
 }
-
-// type calc = (n: number) => number;
-
-// const fibonacci: calc = (n) => {
-//   const cache = [0, 1];
-
-//   const f: calc = (n) => {
-//     if (cache.length > n) {
-//       return cache[n];
-//     } else {
-//       const x = f(n - 1) + f(n - 2);
-//       cache.push(x);
-//       return x;
-//     }
-//   };
-
-//   return f(n);
-// };
-
-// const fibonacci = (n: number): number => {
-//   if (n < 2) return n;
-//   return fibonacci(n - 1) + fibonacci(n - 2);
-// };
-
-// console.time('fib');
-// console.log(fibonacci(102));
-// console.timeEnd('fib');
