@@ -39,7 +39,7 @@ await user.save(); // write the data to the database
 
 user.set({ name: 'Ronak' }); // update an attribute locally
 
-console.log(user.get('name')) // get an attribute
+console.log(user.get('name')); // get an attribute
 
 Users.on('save', (u) => {
   console.log(u.toObject()); // get the attributes as a plain object
@@ -61,7 +61,7 @@ const admins = await Users.scan({
 
 ### `class Model<T>`
 
-#### `constructor(options: ModelOptions, config?: DatabaseOptions): Model<T>`
+#### `constructor(options: ModelOptions, config?: ClientOptions): Model<T>`
 
 Constructor function that creates a new `Model`.
 
@@ -77,7 +77,7 @@ A function that validates the values in a Document and applies any defaults. Thi
 
 ##### `config`
 
-Optional config that is passed directly to the underlying [`AWS.DynamoDB` service constructor from the AWS SDK.](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#constructor-property)
+Optional config that is passed directly to the underlying [`AWS.DynamoDB.DocumentClient` service constructor from the AWS SDK.](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#constructor-property)
 
 #### `Model.create(item: T): Document<T>`
 
@@ -87,7 +87,7 @@ Returns a new `Document` using the attributes of the given item.
 
 Recursively queries the table and resolves with an array of documents which match the given key. Takes an optional options object.
 
-- `options.filters?: ConditionMap<T>` - filters to apply to the query
+- `options.filters?: Conditions<T>` - filters to apply to the query
 - `options.index?: IndexName;` - the name of the index to query
 - `options.limit?: number;` - limit the number of documents returned
 - `options.sort?: 'asc' | 'desc';` - sort direction of the results (N.B. this uses DynamoDB's ScanIndexForward to sort)
@@ -98,15 +98,15 @@ Returned items are type `Document<T>`.
 
 Convenience method which returns the first document found by the `Model.query` method. Throws an error if no items are found.
 
-- `options.filters?: ConditionMap<T>` - filters to apply to the query
+- `options.filters?: Conditions<T>` - filters to apply to the query
 - `options.index?: IndexName;` - the name of the index to query
 - `options.sort?: 'asc' | 'desc';` - sort direction of the results (N.B. this uses DynamoDB's ScanIndexForward to sort)
 
-#### `Model.scan(options? ScanOptions<T>): Promise<Document<T>>`
+#### `Model.scan(options? ScanOptions<T>): Promise<Document<T>[]>`
 
 Performs a scan of the entire table (recursively) and returns all the found documents.
 
-- `options.filters?: ConditionMap<T>` - filters to apply to the scan
+- `options.filters?: Conditions<T>` - filters to apply to the scan
 - `options.index?: IndexName;` - the name of the index to scan
 - `options.limit?: number;` - limit the number of documents returned
 
@@ -120,7 +120,7 @@ Resolves with the document that matches the given key parameter. Throws an error
 
 Deletes the document that matches the given key parameter.
 
-- `options.conditions?: ConditionMap<T>` - conditions to apply to the deletion - if the condition evaluates to false, then the delete will fail
+- `options.conditions?: Conditions<T>` - conditions to apply to the deletion - if the condition evaluates to false, then the delete will fail
 
 #### `Model.on(eventName: EventName, callback: (document?: Document<T>) => void): void`
 
@@ -142,13 +142,83 @@ Sets the value of an attribute on the document.
 
 Saves the Documents attributes to DynamoDB, either overwriting the existing item with the given primary key, or creating a new one.
 
-- `options.conditions?: ConditionMap<T>` - - conditions to apply to the underlying put request - if the condition evaluates to false, then the request will fail
+- `options.conditions?: Conditions<T>` - - conditions to apply to the underlying put request - if the condition evaluates to false, then the request will fail
 
 #### `Document.toObject(): T`
 
 Returns a plain JavaScript object representation of the documents attributes.
 
-### `ConditionMap<T>`
+### `class Client<T>`
+
+A low-level DynamoDB client. It has all of the main functionality of the AWS DynamoDB document client. `Model` and `Document` classes use this behind the scenes.
+
+This class is similar to the main `Model` class, but offers support for `put` and `update` requests, and doesn't have extra features such as validation and events, and it returns the data directly, rather than converting it to `Documents`.
+
+#### `constructor(tableName: string, clientConfig?: ClientOptions): Model<T>`
+
+Constructor function that creates a new `Client`.
+
+##### `table (String - required)`
+
+Name of the DynamoDB table to interact with
+
+##### `clientConfig`
+
+Optional config that is passed directly to the underlying [`AWS.DynamoDB.DocumentClient` service constructor from the AWS SDK.](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#constructor-property)
+
+#### `Client.query(key: Key<T>, options?: QueryOptions<T>): Promise<T[]>`
+
+Recursively queries the table and resolves with an array of documents which match the given key. Takes an optional options object.
+
+- `options.filters?: Conditions<T>` - filters to apply to the query
+- `options.index?: IndexName;` - the name of the index to query
+- `options.limit?: number;` - limit the number of documents returned
+- `options.sort?: 'asc' | 'desc';` - sort direction of the results (N.B. this uses DynamoDB's ScanIndexForward to sort)
+
+Returned items are type `Document<T>`.
+
+#### `Client.first(key: Key<T>, options? FirstOptions<T>): Promise<T>`
+
+Convenience method which returns the first document found by the `Client.query` method. Throws an error if no items are found.
+
+- `options.filters?: Conditions<T>` - filters to apply to the query
+- `options.index?: IndexName;` - the name of the index to query
+- `options.sort?: 'asc' | 'desc';` - sort direction of the results (N.B. this uses DynamoDB's ScanIndexForward to sort)
+
+#### `Client.scan(options? ScanOptions<T>): Promise<T[]>`
+
+Performs a scan of the entire table (recursively) and returns all the found documents.
+
+- `options.filters?: Conditions<T>` - filters to apply to the scan
+- `options.index?: IndexName;` - the name of the index to scan
+- `options.limit?: number;` - limit the number of documents returned
+
+#### `Client.get(key: Key<T>) : Promise<T>`
+
+Resolves with the document that matches the given key parameter. Throws an error if no document exists.
+
+**N.B.** The key must be the full primary key defined in the table schema. If the table has a composite key, both the partition key and sort key must be provided. You cannot search on a secondary index. If you need to do one of these, use `Client.query` or `Client.first` instead.
+
+#### `Client.delete(key: Key<T>, options? DeleteOptions<T>): Promise<void>`
+
+Deletes the document that matches the given key parameter.
+
+- `options.conditions?: Conditions<T>` - conditions to apply to the deletion - if the condition evaluates to false, then the delete will fail
+
+#### `Client.put(item: T, options: PutOptions<T> = {}): Promise<void>`
+
+Saves an item into the database.
+
+- `options.conditions?: Conditions<T>` - conditions to apply to the put request
+
+#### `Client.update(key: Key<T>, updates: UpdateMap<T> ): Promise<T>`
+
+Performs an update request on an item in the database. Resolves with the newly saved data.
+
+- `options.key: Key<T>` - key of the item to update
+- `options.updates: UpdateMap<T>` - updates to apply
+
+### `Conditions<T>`
 
 Condition maps give you a nicer way of writing filter and condition expressions without worrying about `ExpressionAttributeNames` and `ExpressionAttributeValues`.
 
@@ -158,7 +228,7 @@ A simple condition would look like this:
 const condition = { key: 'price', operator: '>', value: 10 };
 ```
 
-This says **"*do this thing if the price is greater than 10*"** - you could use it filter results in a query, or to prevent an item from being deleted or overwritten.
+This says **"_do this thing if the price is greater than 10_"** - you could use it filter results in a query, or to prevent an item from being deleted or overwritten.
 
 You can also get more complex, using logical groups:
 
@@ -176,16 +246,139 @@ const complexCondition = {
 };
 ```
 
-This says **"*do this thing if either a) the price is greater than 10, or b) the price is greater than 5 and the name is MyItem*"**
+This says **"_do this thing if either a) the price is greater than 10, or b) the price is greater than 5 and the name is MyItem_"** - the resulting ConditionExpression/FilterExpression would look something like `(#price > :price10 OR (#price > :price5 AND #name = :name))`.
+
+### `UpdateMap<T>`
+
+- [Documentation - Update Expressions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html)
+
+`UpdateMaps` are used when making update requests using the `jedlik.Client` class and take away some of the complexity of writing and coordinating `UpdateExpressions`, `ExpressionAttributeNames` and `ExpressionAttributeValues`.
+
+You can perform `set`, `remove`, `add`, and `delete` updates. You can combine different types of update in one expression - they will be applied in the aforementioned order.
+
+#### Set updates
+
+**Set** updates have two parts - normal updates (which are always applied) and conditional updates (which will only be applied if the attribute exists already):
+
+```ts
+{
+  set: [{ id: 10, name: 'Michael' }, { age: 20 }];
+}
+```
+
+This says **"_set the id to 10 and the name to Michael, and if the age property exists, set it to 20_"**
+
+For setting nested attributes, just pass the partial object that you want to update. For example, if you have this object in your database:
+
+```ts
+{
+  name: 'Michael',
+  address: {
+    street: 'Example Avenue',
+    town: 'Exampleville',
+  },
+};
+```
+
+The following update:
+
+```ts
+client.update(key, { set: [{ address: { street: 'Different Street' } }] });
+```
+
+would only update the `street` property on the address.
+
+If you wanted to override the whole address property, you can wrap the new value in the `Literal` function.
+
+```ts
+import { Literal } from '@peak-ai/jedlik';
+
+client.update(key, {
+  set: [{ address: Literal({ street: 'Different Street' }) }],
+});
+```
+
+#### Remove updates
+
+**Remove** updates remove an attribute from an item. Just pass the path to the value you want to delete, with a value of true
+
+```ts
+client.update(key, { delete: [{ address: { street: true } }] });
+```
+
+The above expression would delete the items `name` and `street.address` attributes.
+
+#### Add updates
+
+**Add** updates add values to a DynamoDB set, or to a numeric value. You can only add to sets or numbers. Note that DynamoDB sets are different to Arrays and native JavaScript Sets.
+
+You can create a DynamoDB `Set` using the `createSet` function.
+
+If you have the following object in your database:
+
+```ts
+{
+  age: 10,
+  favouriteFoods: createSet(['Pizza', 'Ice Cream']),
+}
+```
+
+Then the following expression:
+
+```ts
+client.update(key, {
+  add: [{ age: 1, favouriteFoods: createSet(['Chocolate']) }],
+});
+```
+
+The resulting item would look like:
+
+```ts
+{
+  age: 12,
+  favouriteFoods: createSet(['Pizza', 'Ice Cream', 'Chocolate']), // Chocolate is added to the set
+}
+```
+
+#### Delete updates
+
+**Delete** updates remove items from a DynamoDB set. Note that DynamoDB sets are different to Arrays and native JavaScript Sets.
+
+You can create a DynamoDB `Set` using the `createSet` function.
+
+If you have the following object in your database:
+
+```ts
+{
+  age: 10,
+  favouriteFoods: createSet(['Pizza', 'Ice Cream']),
+}
+```
+
+Then the following expression:
+
+```ts
+client.update(key, {
+  delete: [{ favouriteFoods: createSet(['Pizza']) }],
+});
+```
+
+The resulting item would look like:
+
+```ts
+{
+  age: 12,
+  favouriteFoods: createSet(['Ice Cream']), // Pizza is no longer in the set
+}
+```
 
 ## Roadmap
 
 Some features that I'd still like to add
 
-- Support for update requests - at the minute only `put` is supported as way of writing to the database
 - Support for more complicated filter types - [the full list is here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html)
 - Ability to add methods to Documents and Models
-- Ability to add "virtual properties" to documents - like getters
+- Ability to add "virtual properties" to documents - custom getters and setters
 - Timestamps
 - Key validation. For example - You should only be able to pass key properties into `Model.get`. And you shouldn't really be able to update the key properties on a document - if you change the value of a key property of an existing document, a new document will be created. We should make this better, even if it's just by adding better type checking. Currently when you need to give a key, it just uses `Partial<T>` as the type.
 

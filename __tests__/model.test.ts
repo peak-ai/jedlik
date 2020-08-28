@@ -1,16 +1,16 @@
 import { mocked } from 'ts-jest/utils';
 import { Model } from '../src/model';
-import { Database } from '../src/database';
+import { DynamoDBClient } from '../src/dynamodb-client';
 import { Document } from '../src/document';
 import { Events } from '../src/events';
 
-jest.mock('../src/database');
+jest.mock('../src/dynamodb-client');
 jest.mock('../src/document');
 jest.mock('../src/events');
 
 /* tslint:disable:variable-name */
 const Mockument = mocked(Document);
-const MockDatabase = mocked(Database);
+const MockDatabase = mocked(DynamoDBClient);
 const MockEvents = mocked(Events);
 /* tslint:enable:variable-name */
 
@@ -26,7 +26,7 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-let mockDatabase: Database<any>;
+let mockDatabase: DynamoDBClient<any>;
 let mockEvents: Events<any>;
 const config = {};
 const tableName = 'users';
@@ -52,7 +52,7 @@ describe('methods', () => {
   let model: Model<any>;
 
   beforeEach(() => {
-    mockDatabase = new Database(tableName);
+    mockDatabase = new DynamoDBClient(tableName);
     MockDatabase.mockImplementationOnce(() => mockDatabase);
     mockEvents = new Events();
     MockEvents.mockImplementationOnce(() => mockEvents);
