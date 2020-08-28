@@ -52,7 +52,7 @@ class LiteralMap<T> {
   constructor(public values: T) {}
 }
 
-const toAction = <T>(
+const toAction = (
   path: string[],
   value: unknown,
   operation: operation,
@@ -61,8 +61,8 @@ const toAction = <T>(
   id: id(),
   operation,
   conditional,
-  path, // if it's nested we need to get the path recursively
-  value, // if its nested we need to get to the end of the line
+  path,
+  value,
 });
 
 type pathValuePairs = [string[], unknown][];
