@@ -1,5 +1,9 @@
 import { Endpoint, DynamoDB } from 'aws-sdk';
-import { DynamoDBClient, DynamoDBSet } from '../src/dynamodb-client';
+import {
+  DynamoDBClient,
+  DynamoDBSet,
+  ServiceConfig,
+} from '../src/dynamodb-client';
 import { createSet, Literal } from '../src';
 
 enum UserType {
@@ -86,7 +90,7 @@ const SORTED_USERS_SECONDARY_INDEX: User[] = (function () {
 
 let database: DynamoDBClient<User>;
 
-const dynamoConfig = {
+const dynamoConfig: ServiceConfig = {
   endpoint: new Endpoint('http://localhost:8000').href,
   region: 'local',
   accessKeyId: 'xxx',

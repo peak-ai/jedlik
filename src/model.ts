@@ -1,15 +1,15 @@
 import {
   DynamoDBClient,
-  ClientOptions,
   DeleteOptions,
   Key,
   QueryOptions,
   ScanOptions,
+  ServiceConfig,
 } from './dynamodb-client';
 import { Document, Schema } from './document';
 import { Events, EventName, EventCallback } from './events';
 
-interface ModelOptions<T> {
+export interface ModelOptions<T> {
   table: string;
   schema: Schema<T>;
 }
@@ -19,7 +19,7 @@ export class Model<T> {
   private events: Events<Document<T>> = new Events();
   private schema: Schema<T>;
 
-  constructor(options: ModelOptions<T>, config?: ClientOptions) {
+  constructor(options: ModelOptions<T>, config?: ServiceConfig) {
     this.db = new DynamoDBClient(options.table, config);
     this.schema = options.schema;
   }
