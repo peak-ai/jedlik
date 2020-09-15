@@ -1,7 +1,7 @@
 import { DynamoDB } from 'aws-sdk';
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service';
 
-export type DocumentClientOptions = DynamoDB.DocumentClient.DocumentClientOptions &
+export type ServiceConfig = DynamoDB.DocumentClient.DocumentClientOptions &
   ServiceConfigurationOptions &
   DynamoDB.ClientApiVersions;
 
@@ -24,7 +24,7 @@ export type DynamoDBList =
 export class DocumentClient {
   private documentClient: DynamoDB.DocumentClient;
 
-  constructor(params?: DocumentClientOptions) {
+  constructor(params?: ServiceConfig) {
     this.documentClient = new DynamoDB.DocumentClient(params);
   }
 

@@ -1,11 +1,11 @@
 import {
   DocumentClient,
-  DocumentClientOptions,
   IndexName,
   DeleteInput,
   PutInput,
   QueryInput,
   ScanInput,
+  ServiceConfig,
   UpdateInput,
   Key as DocumentClientKey,
   DynamoDBList as DDBList,
@@ -20,6 +20,8 @@ import {
 
 export type DynamoDBList = DDBList;
 export type DynamoDBSet = DDBSet;
+
+export { ServiceConfig };
 
 export interface ScanOptions<T> {
   filters?: ConditionExpressions.Conditions<T>;
@@ -50,12 +52,10 @@ export interface DeleteOptions<T> {
 
 export type Key<T> = Partial<T>;
 
-export type ClientOptions = DocumentClientOptions;
-
 export class DynamoDBClient<T> {
   private documentClient: DocumentClient;
 
-  constructor(private tableName: string, config: DocumentClientOptions = {}) {
+  constructor(private tableName: string, config: ServiceConfig = {}) {
     this.documentClient = new DocumentClient({
       ...config,
       params: {

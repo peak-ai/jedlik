@@ -61,7 +61,7 @@ const admins = await Users.scan({
 
 ### `class Model<T>`
 
-#### `constructor(options: ModelOptions, config?: ClientOptions): Model<T>`
+#### `constructor(options: ModelOptions, config?: ServiceConfig): Model<T>`
 
 Constructor function that creates a new `Model`.
 
@@ -154,7 +154,7 @@ A low-level DynamoDB client. It has all of the main functionality of the AWS Dyn
 
 This class is similar to the main `Model` class, but offers support for `put` and `update` requests, and doesn't have extra features such as validation and events, and it returns the data directly, rather than converting it to `Documents`.
 
-#### `constructor(tableName: string, clientConfig?: ClientOptions): Model<T>`
+#### `constructor(tableName: string, config?: ServiceConfig): Model<T>`
 
 Constructor function that creates a new `Client`.
 
@@ -162,7 +162,7 @@ Constructor function that creates a new `Client`.
 
 Name of the DynamoDB table to interact with
 
-##### `clientConfig`
+##### `config`
 
 Optional config that is passed directly to the underlying [`AWS.DynamoDB.DocumentClient` service constructor from the AWS SDK.](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#constructor-property)
 

@@ -1,6 +1,6 @@
 import { mocked } from 'ts-jest/utils';
 import { Model } from '../src/model';
-import { DynamoDBClient } from '../src/dynamodb-client';
+import { DynamoDBClient, ServiceConfig } from '../src/dynamodb-client';
 import { Document } from '../src/document';
 import { Events } from '../src/events';
 
@@ -28,7 +28,7 @@ beforeEach(() => {
 
 let mockDatabase: DynamoDBClient<any>;
 let mockEvents: Events<any>;
-const config = {};
+const config: ServiceConfig = {};
 const tableName = 'users';
 const schema = {
   validate: jest.fn(),
