@@ -13,9 +13,11 @@ NPM:
 
 ## Usage
 
+You can use package like [joi](https://www.npmjs.com/package/joi) to validate the schema.
+
 ```ts
 import * as jedlik from '@peak-ai/jedlik';
-import * as Joi from '@hapi/joi';
+import * as Joi from 'joi';
 
 interface UserProps {
   id: number;
@@ -24,7 +26,7 @@ interface UserProps {
 }
 
 const schema = Joi.object({
-  id: Joi.string().required(),
+  id: Joi.number().required(),
   name: Joi.string().required(),
   type: Joi.string().allow('admin', 'user').required(),
 });
