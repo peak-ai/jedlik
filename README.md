@@ -54,8 +54,13 @@ const user2 = await Users.get({ id: 2 }); // query the database
 console.log(user2.toObject());
 
 // advanced filtering
-const admins = await Users.scan({
-  filters: { key: 'type', operator: '=', value: 'admin' },
+const adminsCalledRon_ = await Users.scan({
+  filters: {
+    $or: [
+      { key: 'type', operator: '=', value: 'admin' },
+      { key: 'name', operator: 'begins_with', value: 'Ron' },
+    ],
+  },
 });
 ```
 
@@ -222,6 +227,8 @@ Performs an update request on an item in the database. Resolves with the newly s
 
 ### `Conditions<T>`
 
+- [AWS Documentation - Condition Expressions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html)
+
 Condition maps give you a nicer way of writing filter and condition expressions without worrying about `ExpressionAttributeNames` and `ExpressionAttributeValues`.
 
 A simple condition would look like this:
@@ -232,7 +239,7 @@ const condition = { key: 'price', operator: '>', value: 10 };
 
 This says **"_do this thing if the price is greater than 10_"** - you could use it filter results in a query, or to prevent an item from being deleted or overwritten.
 
-You can also get more complex, using logical groups:
+You can also get more complex, using logical groups with `$and` `$or` and `$not` groups. `$and` and `$or` must be lists of condition groups. `$not` must be a single condition group:
 
 ```ts
 const complexCondition = {
@@ -241,14 +248,47 @@ const complexCondition = {
     {
       $and: [
         { key: 'price', operator: '>', value: 5 },
-        { key: 'name', operator: '=', value: 'MyItem' },
+        { $not: { key: 'name', operator: 'begins_with', value: 'MyItem' } },
       ],
     },
   ],
 };
 ```
 
-This says **"_do this thing if either a) the price is greater than 10, or b) the price is greater than 5 and the name is MyItem_"** - the resulting ConditionExpression/FilterExpression would look something like `(#price > :price10 OR (#price > :price5 AND #name = :name))`.
+This says **"_do this thing if either a) the price is greater than 10, or b) the price is greater than 5 and the name noes not begin with MyItem_"** - the resulting ConditionExpression/FilterExpression sent to DynamoDB would look something like `(#price > :price10 OR (#price > :price5 AND NOT begins_with(#name, :name)))`.
+
+#### Supported Operators
+
+Supported operators are:
+
+- `AND` (`$and`)
+- `OR` (`$or`)
+- `NOT` (`$not`)
+- `=`
+- `<>`
+- `<`
+- `<=`
+- `>`
+- `>=`
+- `begins_with`
+- `contains`
+- `attribute_exists` - conditions with this operator do not accept a `value` key
+- `attribute_not_exists` - conditions with this operator do not accept a `value` key
+
+#### Workarounds
+
+`BETWEEN`, `IN`, `attribute_type` and `size` operators are not currently supported.
+
+These will be added at some point, but you can usually get around the lack of `BETWEEN` and `IN` support using `$and` or `$or` groups. e.g. `price BETWEEN 10 AND 20` can be done as:
+
+```ts
+{
+  $and: [
+    { key: 'price', operator: '>', value: 10 }
+    { key: 'price', operator: '<', value: 20 }
+  ]
+}
+```
 
 ### `UpdateMap<T>`
 
