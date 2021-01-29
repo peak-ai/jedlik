@@ -27,14 +27,18 @@ interface User {
   testsWritten?: number;
   set1: DynamoDBSet;
   set2?: DynamoDBSet;
+  info: string;
+  perhaps?: string;
 }
+
+const userInfo = 'SAMPLE_SENTENCE';
 
 function generateUser(id: number): User {
   const type = Math.random() > 0.5 ? UserType.Admin : UserType.User;
   const set1 = ['firstSet', 'firstSet2'];
   set1.sort(); // sets always come back sorted!
 
-  return {
+  const user: User = {
     id,
     type,
     name: `${type}-${id}`,
@@ -44,7 +48,14 @@ function generateUser(id: number): User {
       postcode: `${id}`,
     },
     set1: createSet(set1),
+    info: id % 2 === 0 ? userInfo.toUpperCase() : userInfo.toLowerCase(),
   };
+
+  if (Math.random() > 0.5) {
+    user.perhaps = 'RANDOMLY_ADDED_VALUE';
+  }
+
+  return user;
 }
 
 const USERS: User[] = [];
@@ -268,6 +279,88 @@ describe('query', () => {
     expect(result).toEqual(expected);
   });
 
+  it('returns a filtered result set based on "begins_with" condition functions', async () => {
+    expect.assertions(1);
+
+    const result = await database.query(
+      { type: UserType.User },
+      {
+        filters: {
+          key: 'info',
+          operator: 'begins_with',
+          value: userInfo.toLowerCase().substring(0, 3),
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) =>
+        user.type === UserType.User &&
+        user.info.startsWith(userInfo.toLowerCase().substring(0, 3))
+    );
+
+    expect(result).toEqual(expected);
+  });
+
+  it('returns a filtered result set based on "contains" condition functions', async () => {
+    expect.assertions(1);
+
+    const result = await database.query(
+      { type: UserType.User },
+      {
+        filters: {
+          key: 'info',
+          operator: 'contains',
+          value: userInfo.toLowerCase().substring(4, 7),
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) =>
+        user.type === UserType.User &&
+        user.info.includes(userInfo.toLowerCase().substring(4, 7))
+    );
+
+    expect(result).toEqual(expected);
+  });
+
+  it('returns a filtered result set based on "attribute_exists" condition functions', async () => {
+    expect.assertions(1);
+
+    const result = await database.query(
+      { type: UserType.User },
+      {
+        filters: {
+          key: 'perhaps',
+          operator: 'attribute_exists',
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.User && user.perhaps
+    );
+
+    expect(result).toEqual(expected);
+  });
+
+  it('returns a filtered result set based on "attribute_not_exists" condition functions', async () => {
+    expect.assertions(1);
+
+    const result = await database.query(
+      { type: UserType.User },
+      {
+        filters: {
+          key: 'perhaps',
+          operator: 'attribute_not_exists',
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.User && !user.perhaps
+    );
+
+    expect(result).toEqual(expected);
+  });
+
   it('applies complex filters correctly', async () => {
     expect.assertions(1);
 
@@ -284,6 +377,77 @@ describe('query', () => {
     );
     const expected = SORTED_USERS_ASCENDING.filter(
       (user) => user.type === UserType.Admin && (user.age > 55 || user.age < 30)
+    );
+
+    expect(result).toEqual(expected);
+  });
+
+  it('applies complex filters with condition functions correctly', async () => {
+    expect.assertions(1);
+
+    const result = await database.query(
+      { type: UserType.Admin },
+      {
+        filters: {
+          $and: [
+            { key: 'perhaps', operator: 'attribute_exists' },
+            {
+              $or: [
+                { key: 'age', operator: '<', value: 30 },
+                { key: 'age', operator: '>', value: 55 },
+              ],
+            },
+          ],
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) =>
+        user.type === UserType.Admin &&
+        user.perhaps &&
+        (user.age > 55 || user.age < 30)
+    );
+
+    expect(result).toEqual(expected);
+  });
+
+  it('applies NOT conditions correctly', async () => {
+    expect.assertions(1);
+
+    const result = await database.query(
+      { type: UserType.Admin },
+      {
+        filters: {
+          $not: { key: 'age', operator: '<', value: 30 },
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) => user.type === UserType.Admin && !(user.age < 30)
+    );
+
+    expect(result).toEqual(expected);
+  });
+
+  it('applies complex NOT conditions correctly', async () => {
+    expect.assertions(1);
+
+    const result = await database.query(
+      { type: UserType.Admin },
+      {
+        filters: {
+          $not: {
+            $or: [
+              { key: 'age', operator: '>', value: 55 },
+              { key: 'age', operator: '<', value: 30 },
+            ],
+          },
+        },
+      }
+    );
+    const expected = SORTED_USERS_ASCENDING.filter(
+      (user) =>
+        user.type === UserType.Admin && !(user.age > 55 || user.age < 30)
     );
 
     expect(result).toEqual(expected);
