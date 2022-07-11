@@ -2,10 +2,12 @@ import { Parser } from '../../src/expression-parsers/keys';
 
 const hexadecimalKey = /^:[\da-f]{40}$/i;
 
-const getValueName = (values: Record<string, unknown>) => (
-  value: unknown
-): string =>
-  (Object.entries(values).find(([, v]) => v === value) as [string, unknown])[0];
+const getValueName =
+  (values: Record<string, unknown>) =>
+  (value: unknown): string =>
+    (
+      Object.entries(values).find(([, v]) => v === value) as [string, unknown]
+    )[0];
 
 describe('expressionAttributeNames', () => {
   it('handles a single plain query object', () => {

@@ -3,9 +3,8 @@ import { DocumentClient } from '../src/document-client';
 
 jest.mock('aws-sdk');
 
-const awsDocumentClient = DynamoDB.DocumentClient as jest.Mock<
-  DynamoDB.DocumentClient
->;
+const awsDocumentClient =
+  DynamoDB.DocumentClient as jest.Mock<DynamoDB.DocumentClient>;
 
 const data = jest.fn();
 const error = jest.fn();

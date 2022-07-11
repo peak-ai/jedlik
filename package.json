@@ -24,23 +24,23 @@
     "test"
   ],
   "dependencies": {
-    "@types/node": "^13.11.0",
-    "aws-sdk": "^2.315.0"
+    "@types/node": "^18.0.3",
+    "aws-sdk": "^2.1171.0"
   },
   "peerDependencies": {
-    "aws-sdk": "^2.315.0"
+    "aws-sdk": "^2.1171.0"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.16",
-    "@typescript-eslint/eslint-plugin": "^3.3.0",
-    "@typescript-eslint/parser": "^3.3.0",
-    "eslint": "^7.2.0",
-    "eslint-config-prettier": "^6.11.0",
-    "eslint-plugin-prettier": "^3.1.4",
-    "jest": "^24.0.2",
-    "prettier": "^2.0.5",
-    "ts-jest": "^24.0.2",
-    "typescript": "^3.5.3"
+    "@types/jest": "^28.1.4",
+    "@typescript-eslint/eslint-plugin": "^5.30.5",
+    "@typescript-eslint/parser": "^5.30.5",
+    "eslint": "^8.19.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "jest": "^28.1.2",
+    "prettier": "^2.7.1",
+    "ts-jest": "^28.0.5",
+    "typescript": "^4.7.4"
   },
   "jest": {
     "transform": {

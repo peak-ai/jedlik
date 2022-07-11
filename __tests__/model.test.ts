@@ -1,4 +1,4 @@
-import { mocked } from 'ts-jest/utils';
+import { mocked } from 'jest-mock';
 import { Model } from '../src/model';
 import { DynamoDBClient, ServiceConfig } from '../src/dynamodb-client';
 import { Document } from '../src/document';
@@ -15,7 +15,7 @@ const MockEvents = mocked(Events);
 /* tslint:enable:variable-name */
 
 const getMockObjects = () => {
-  const data = [];
+  const data: any[] = [];
   for (let i = 0; i < Math.random() * 5; i += 1) {
     data.push(jest.fn());
   }

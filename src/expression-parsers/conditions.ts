@@ -4,15 +4,32 @@ import {
   ExpressionAttributeValueMap,
 } from '../document-client';
 
-// TODO: there are loads more operators
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
 type Operator = '=' | '<>' | '<' | '<=' | '>' | '>=';
 
-type Condition<T> = {
+type ConditionFunctionWithValue = 'begins_with' | 'contains';
+type ConditionFunctionNoValue = 'attribute_exists' | 'attribute_not_exists';
+
+// TODO: Add support for `BETWEEN`, `IN`, `attribute_type` and `size`
+
+type ConditionWithValue<T> =
+  | {
+      key: Extract<keyof T, string>;
+      operator: Operator;
+      value: T[keyof T];
+    }
+  | {
+      key: Extract<keyof T, string>;
+      operator: ConditionFunctionWithValue;
+      value: T[keyof T];
+    };
+
+type ConditionNoValue<T> = {
   key: Extract<keyof T, string>;
-  operator: Operator;
-  value: T[keyof T];
+  operator: ConditionFunctionNoValue;
 };
+
+type Condition<T> = ConditionWithValue<T> | ConditionNoValue<T>;
 
 type Identifiable<T> = T & { id: string };
 
@@ -24,7 +41,11 @@ type OrGroup<T> = {
   $or: ConditionMap<T>[];
 };
 
-type ConditionGroup<T> = AndGroup<T> | OrGroup<T>;
+type NotGroup<T> = {
+  $not: ConditionMap<T>;
+};
+
+type ConditionGroup<T> = AndGroup<T> | OrGroup<T> | NotGroup<T>;
 
 type ConditionMap<T> = T | ConditionGroup<T>;
 
@@ -48,6 +69,12 @@ function addIdsToConditions<T>(
   if ((conditions as OrGroup<Condition<T>>).$or) {
     return {
       $or: addIdsToGroups((conditions as OrGroup<Condition<T>>).$or),
+    } as ConditionMap<Identifiable<Condition<T>>>;
+  }
+
+  if ((conditions as NotGroup<Condition<T>>).$not) {
+    return {
+      $not: addIdsToConditions((conditions as NotGroup<Condition<T>>).$not),
     } as ConditionMap<Identifiable<Condition<T>>>;
   }
 
@@ -95,6 +122,12 @@ function getExpressionAttributeNames<T>(
     );
   }
 
+  if ((conditions as NotGroup<Identifiable<Condition<T>>>).$not) {
+    return getAttributeNamesFromConditionMaps([
+      (conditions as NotGroup<Identifiable<Condition<T>>>).$not,
+    ]);
+  }
+
   return getAttributeNames(conditions as Condition<T>);
 }
 
@@ -102,13 +135,18 @@ function getExpressionAttributeNames<T>(
  * Expression Attribute Value Helpers
  */
 
-function getAttributeValue<T>({
-  id,
-  value,
-}: Identifiable<Condition<T>>): ExpressionAttributeValueMap {
-  return {
-    [toValue(id)]: value,
-  };
+function getAttributeValue<T>(
+  condition: Identifiable<Condition<T>>
+): ExpressionAttributeValueMap {
+  if ((condition as Identifiable<ConditionWithValue<T>>).value) {
+    return {
+      [toValue(condition.id)]: (
+        condition as Identifiable<ConditionWithValue<T>>
+      ).value,
+    };
+  }
+
+  return {};
 }
 
 function getAttributeValuesFromConditionMaps<T>(
@@ -138,6 +176,12 @@ function getExpressionAttributeValues<T>(
     );
   }
 
+  if ((conditions as NotGroup<Identifiable<Condition<T>>>).$not) {
+    return getAttributeValuesFromConditionMaps([
+      (conditions as NotGroup<Identifiable<Condition<T>>>).$not,
+    ]);
+  }
+
   return getAttributeValue(conditions as Identifiable<Condition<T>>);
 }
 
@@ -146,6 +190,18 @@ function getExpressionAttributeValues<T>(
  */
 
 function getSimpleExpression<T>(condition: Identifiable<Condition<T>>): string {
+  if (['begins_with', 'contains'].includes(condition.operator)) {
+    return `${condition.operator}(${toName(condition.key)}, ${toValue(
+      condition.id
+    )})`;
+  }
+
+  if (
+    ['attribute_exists', 'attribute_not_exists'].includes(condition.operator)
+  ) {
+    return `${condition.operator}(${toName(condition.key)})`;
+  }
+
   return `${toName(condition.key)} ${condition.operator} ${toValue(
     condition.id
   )}`;
@@ -163,6 +219,12 @@ function getOrExpression<T>(
   return `(${group.$or.map(getConditionExpression).join(' OR ')})`;
 }
 
+function getNotExpression<T>(
+  group: NotGroup<Identifiable<Condition<T>>>
+): string {
+  return `NOT ${getConditionExpression(group.$not)}`;
+}
+
 function getConditionExpression<T>(
   conditions: ConditionMap<Identifiable<Condition<T>>>
 ): string {
@@ -172,6 +234,10 @@ function getConditionExpression<T>(
 
   if ((conditions as OrGroup<Identifiable<Condition<T>>>).$or) {
     return getOrExpression(conditions as OrGroup<Identifiable<Condition<T>>>);
+  }
+
+  if ((conditions as NotGroup<Identifiable<Condition<T>>>).$not) {
+    return getNotExpression(conditions as NotGroup<Identifiable<Condition<T>>>);
   }
 
   return getSimpleExpression(conditions as Identifiable<Condition<T>>);

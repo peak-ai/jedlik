@@ -1,11 +1,13 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@typescript-eslint"
+  ],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier/@typescript-eslint",
+    "prettier",
     "plugin:prettier/recommended"
   ],
   "env": {
@@ -13,7 +15,9 @@
   },
   "overrides": [
     {
-      "files": ["__tests__/**/*.test.ts"],
+      "files": [
+        "__tests__/**/*.test.ts"
+      ],
       "env": {
         "jest": true
       },
@@ -21,7 +25,9 @@
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unused-vars": [
           "error",
-          { "ignoreRestSiblings": true }
+          {
+            "ignoreRestSiblings": true
+          }
         ]
       }
     }

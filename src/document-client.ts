@@ -12,8 +12,10 @@ export type PutInput = DynamoDB.DocumentClient.PutItemInput;
 export type QueryInput = DynamoDB.DocumentClient.QueryInput;
 export type ScanInput = DynamoDB.DocumentClient.ScanInput;
 export type UpdateInput = DynamoDB.DocumentClient.UpdateItemInput;
-export type ExpressionAttributeNameMap = DynamoDB.DocumentClient.ExpressionAttributeNameMap;
-export type ExpressionAttributeValueMap = DynamoDB.DocumentClient.ExpressionAttributeValueMap;
+export type ExpressionAttributeNameMap =
+  DynamoDB.DocumentClient.ExpressionAttributeNameMap;
+export type ExpressionAttributeValueMap =
+  DynamoDB.DocumentClient.ExpressionAttributeValueMap;
 export type KeyConditions = DynamoDB.DocumentClient.KeyConditions;
 export type DynamoDBSet = DynamoDB.DocumentClient.DynamoDbSet;
 export type DynamoDBList =
