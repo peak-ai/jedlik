@@ -140,9 +140,9 @@ function getAttributeValue<T>(
 ): ExpressionAttributeValueMap {
   if ((condition as Identifiable<ConditionWithValue<T>>).value) {
     return {
-      [toValue(condition.id)]: (condition as Identifiable<
-        ConditionWithValue<T>
-      >).value,
+      [toValue(condition.id)]: (
+        condition as Identifiable<ConditionWithValue<T>>
+      ).value,
     };
   }
 

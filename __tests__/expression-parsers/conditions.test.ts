@@ -2,10 +2,12 @@ import { Parser, Conditions } from '../../src/expression-parsers/conditions';
 
 const hexadecimalKey = /^:[\da-f]{40}$/i;
 
-const getValueName = (values: Record<string, unknown>) => (
-  value: unknown
-): string =>
-  (Object.entries(values).find(([, v]) => v === value) as [string, unknown])[0];
+const getValueName =
+  (values: Record<string, unknown>) =>
+  (value: unknown): string =>
+    (
+      Object.entries(values).find(([, v]) => v === value) as [string, unknown]
+    )[0];
 
 describe('simple conditions', () => {
   const condition: Conditions<any> = {

@@ -216,11 +216,11 @@ export class DynamoDBClient<T> {
     if (options.filters) {
       const parser = new ConditionExpressions.Parser(options.filters);
       Object.assign(
-        params.ExpressionAttributeNames,
+        params.ExpressionAttributeNames || {},
         parser.expressionAttributeNames
       );
       Object.assign(
-        params.ExpressionAttributeValues,
+        params.ExpressionAttributeValues || {},
         parser.expressionAttributeValues
       );
       params.FilterExpression = parser.expression;

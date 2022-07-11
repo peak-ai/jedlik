@@ -21,9 +21,10 @@ type TestType = {
   j: DynamoDBSet;
 };
 
-const getValueName = (entries: [string, unknown][]) => (
-  value: unknown
-): string => (entries.find(([, v]) => v === value) as [string, unknown])[0];
+const getValueName =
+  (entries: [string, unknown][]) =>
+  (value: unknown): string =>
+    (entries.find(([, v]) => v === value) as [string, unknown])[0];
 
 const hexadecimalKey = /^:[\da-f]{40}$/i;
 
